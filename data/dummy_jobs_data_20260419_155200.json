@@ -1,0 +1,452 @@
+{
+  "site": "일로온",
+  "category": "데이터",
+  "analyzed_at": "2026-04-19",
+  "trend_summary": {
+    "hot_frameworks": [
+      "Apache Spark",
+      "dbt",
+      "Airflow"
+    ],
+    "hot_languages": [
+      "Python",
+      "SQL"
+    ],
+    "hot_tools": [
+      "BigQuery",
+      "Snowflake",
+      "Databricks",
+      "Tableau"
+    ],
+    "talent_keywords": [
+      "데이터 파이프라인",
+      "ETL/ELT",
+      "데이터 모델링",
+      "분석 역량"
+    ],
+    "salary_trend": "경력 3년 이상 5,500만원~8,500만원대 형성",
+    "welfare_trend": "자유로운 근무제, 학습지원금, 성과급 중심"
+  },
+  "jobs": [
+    {
+      "job_id": "a7f2c934-8b1d-4e5a-9c2e-7d1b6f3a4c8e",
+      "status": "active",
+      "always_open": false,
+      "company": {
+        "id": "b9e3d1f8-2c4a-4f6b-8d9e-5a7c3b1f6e2a",
+        "name": "스트림데이타 솔루션즈",
+        "industry": {
+          "large": "IT/인터넷",
+          "mid": "데이터 플랫폼"
+        },
+        "size": "중견기업",
+        "employee_count": 250
+      },
+      "position": {
+        "title": "데이터 엔지니어",
+        "job_category": {
+          "large": "개발",
+          "mid": "데이터",
+          "small": "데이터 엔지니어링"
+        },
+        "career": {
+          "type": "경력",
+          "min_year": 3,
+          "max_year": 7
+        },
+        "education": {
+          "type": "대졸이상",
+          "required": false
+        },
+        "headcount": 2,
+        "work_type": "하이브리드"
+      },
+      "work_condition": {
+        "location": {
+          "sido": "서울",
+          "sigungu": "강남구",
+          "address": "강남구 테헤란로 123"
+        },
+        "salary": {
+          "type": "연봉",
+          "min": 55000000,
+          "max": 75000000,
+          "negotiable": true,
+          "unit": "원"
+        },
+        "work_hours": "09:00~18:00"
+      },
+      "skills": [
+        "Python",
+        "SQL",
+        "Apache Spark",
+        "Airflow",
+        "AWS Redshift",
+        "ETL"
+      ],
+      "detail": {
+        "main_tasks": [
+          "대규모 데이터 파이프라인 설계 및 구현",
+          "Apache Spark를 활용한 데이터 처리",
+          "Airflow 워크플로우 개발 및 운영",
+          "데이터 품질 관리 및 모니터링"
+        ],
+        "requirements": [
+          "Python, SQL을 이용한 3년 이상의 데이터 엔지니어링 경험",
+          "Apache Spark 또는 유사 빅데이터 처리 경험",
+          "ETL 파이프라인 개발 경험",
+          "클라우드 데이터 웨어하우스(Redshift, BigQuery 등) 경험"
+        ],
+        "preferred": [
+          "Airflow, dbt 등 오케스트레이션 툴 경험",
+          "Kafka 또는 실시간 데이터 처리 경험",
+          "데이터 모델링 설계 경험",
+          "대규모 트래픽 처리 경험"
+        ],
+        "talent": [
+          "문제 해결 능력이 뛰어난 인재",
+          "새로운 기술 학습에 적극적인 인재",
+          "팀 협업을 중시하는 인재"
+        ],
+        "benefits": [
+          "연 15일 이상 휴가",
+          "성과금 및 인센티브",
+          "도서 구매비 지원",
+          "연간 교육비 지원",
+          "유연근무제"
+        ]
+      },
+      "apply": {
+        "method": "일로온 입사지원",
+        "document": [
+          "이력서",
+          "자기소개서",
+          "포트폴리오"
+        ]
+      },
+      "recruitment_process": {
+        "total_steps": 4,
+        "steps": [
+          {
+            "step": 1,
+            "name": "서류전형",
+            "description": "이력서 및 경험 검토",
+            "duration": "1주일"
+          },
+          {
+            "step": 2,
+            "name": "기술 과제",
+            "description": "데이터 엔지니어링 관련 과제 수행",
+            "duration": "2주일"
+          },
+          {
+            "step": 3,
+            "name": "기술면접",
+            "description": "데이터 설계 및 구현 역량 평가",
+            "duration": "1주일"
+          },
+          {
+            "step": 4,
+            "name": "최종면접",
+            "description": "팀장 및 임원 면접",
+            "duration": "1주일"
+          }
+        ],
+        "notice": "합격자에 한해 개별 연락"
+      },
+      "ai_recommendation": {
+        "is_recommended": true,
+        "match_score": 92
+      },
+      "stats": {
+        "view_count": 342,
+        "apply_count": 45,
+        "bookmark_count": 87
+      },
+      "dates": {
+        "posted_at": "2026-04-19",
+        "deadline": null,
+        "updated_at": "2026-04-19"
+      }
+    },
+    {
+      "job_id": "c3e8b6f1-7a2d-4c9b-8f5e-2a1d6b7c3e4f",
+      "status": "active",
+      "always_open": true,
+      "company": {
+        "id": "d5a9e2c7-4f8b-4e3a-9c1d-8b5f3a7e2c6d",
+        "name": "프리즘 애널리틱스 랩",
+        "industry": {
+          "large": "IT/인터넷",
+          "mid": "BI/분석 플랫폼"
+        },
+        "size": "스타트업",
+        "employee_count": 85
+      },
+      "position": {
+        "title": "Analytics 엔지니어",
+        "job_category": {
+          "large": "개발",
+          "mid": "데이터",
+          "small": "분석 엔지니어링"
+        },
+        "career": {
+          "type": "신입·경력",
+          "min_year": 1,
+          "max_year": 5
+        },
+        "education": {
+          "type": "대졸이상",
+          "required": false
+        },
+        "headcount": 1,
+        "work_type": "풀리모트"
+      },
+      "work_condition": {
+        "location": {
+          "sido": "서울",
+          "sigungu": "마포구",
+          "address": "마포구 월드컵로 123 (풀리모트)"
+        },
+        "salary": {
+          "type": "연봉",
+          "min": 40000000,
+          "max": 65000000,
+          "negotiable": true,
+          "unit": "원"
+        },
+        "work_hours": "10:00~19:00 (유연근무)"
+      },
+      "skills": [
+        "SQL",
+        "Python",
+        "dbt",
+        "BigQuery",
+        "Tableau",
+        "데이터 모델링"
+      ],
+      "detail": {
+        "main_tasks": [
+          "dbt를 활용한 데이터 모델 구축 및 관리",
+          "SQL을 이용한 분석 쿼리 작성",
+          "Tableau 대시보드 개발 및 운영",
+          "비즈니스팀의 분석 요청 지원"
+        ],
+        "requirements": [
+          "SQL을 능숙하게 다룰 수 있는 역량",
+          "Python 또는 유사 프로그래밍 언어 경험",
+          "데이터 모델링 개념 이해",
+          "분석 데이터 시각화 경험(Tableau, Metabase 등)"
+        ],
+        "preferred": [
+          "dbt 경험",
+          "BigQuery 또는 Snowflake 경험",
+          "1년 이상의 analytics 역할 경험",
+          "비즈니스 이해도가 높은 인재"
+        ],
+        "talent": [
+          "데이터로 문제를 해결하려는 자세",
+          "소통 능력이 뛰어난 인재",
+          "자율적으로 학습하는 인재"
+        ],
+        "benefits": [
+          "완전한 풀리모트 근무",
+          "유연한 근무시간",
+          "월 50만원 IT장비 지원비",
+          "분기별 성과 보너스",
+          "개인 학습 비용 지원"
+        ]
+      },
+      "apply": {
+        "method": "일로온 입사지원",
+        "document": [
+          "이력서",
+          "자기소개서"
+        ]
+      },
+      "recruitment_process": {
+        "total_steps": 3,
+        "steps": [
+          {
+            "step": 1,
+            "name": "서류전형",
+            "description": "이력서 검토",
+            "duration": "3일"
+          },
+          {
+            "step": 2,
+            "name": "데이터 분석 과제",
+            "description": "SQL 및 데이터 모델링 과제",
+            "duration": "10일"
+          },
+          {
+            "step": 3,
+            "name": "기술 및 임원면접",
+            "description": "온라인 화상면접",
+            "duration": "1주일"
+          }
+        ],
+        "notice": "합격자에 한해 이메일 발송"
+      },
+      "ai_recommendation": {
+        "is_recommended": true,
+        "match_score": 87
+      },
+      "stats": {
+        "view_count": 521,
+        "apply_count": 68,
+        "bookmark_count": 142
+      },
+      "dates": {
+        "posted_at": "2026-04-19",
+        "deadline": null,
+        "updated_at": "2026-04-19"
+      }
+    },
+    {
+      "job_id": "e9d1f5a8-3c7e-4a2b-9d6f-1e4c8b2a5d7f",
+      "status": "active",
+      "always_open": false,
+      "company": {
+        "id": "f2b8c4d9-5e1a-4f8c-7b3e-6d9a2f5c1b4e",
+        "name": "데이터포트 엔터프라이즈",
+        "industry": {
+          "large": "IT/인터넷",
+          "mid": "클라우드 데이터 서비스"
+        },
+        "size": "대기업",
+        "employee_count": 1200
+      },
+      "position": {
+        "title": "데이터 플랫폼 엔지니어",
+        "job_category": {
+          "large": "개발",
+          "mid": "데이터",
+          "small": "플랫폼 엔지니어링"
+        },
+        "career": {
+          "type": "경력",
+          "min_year": 5,
+          "max_year": 10
+        },
+        "education": {
+          "type": "대졸이상",
+          "required": false
+        },
+        "headcount": 1,
+        "work_type": "하이브리드"
+      },
+      "work_condition": {
+        "location": {
+          "sido": "서울",
+          "sigungu": "용산구",
+          "address": "용산구 한남대로 456"
+        },
+        "salary": {
+          "type": "연봉",
+          "min": 70000000,
+          "max": 95000000,
+          "negotiable": true,
+          "unit": "원"
+        },
+        "work_hours": "09:00~18:00 (유동적)"
+      },
+      "skills": [
+        "Python",
+        "SQL",
+        "Apache Kafka",
+        "Spark SQL",
+        "Snowflake",
+        "Databricks",
+        "데이터 아키텍처"
+      ],
+      "detail": {
+        "main_tasks": [
+          "엔터프라이즈급 데이터 플랫폼 아키텍처 설계 및 구축",
+          "실시간 데이터 파이프라인(Kafka) 개발 및 운영",
+          "Snowflake/Databricks 기반 데이터 웨어하우스 운영",
+          "데이터 아키텍처 개선 및 최적화"
+        ],
+        "requirements": [
+          "5년 이상의 데이터 엔지니어링 경험",
+          "Kafka, Spark SQL 등 대규모 데이터 처리 경험",
+          "클라우드 데이터 플랫폼(Snowflake, Databricks, BigQuery 등) 구축 경험",
+          "데이터 아키텍처 설계 경험"
+        ],
+        "preferred": [
+          "Hadoop, Hive 등 온프레미스 데이터 인프라 경험",
+          "ELT 기반 모던 데이터 스택 경험",
+          "성능 최적화 및 비용 관리 경험",
+          "팀 리드/멘토링 경험"
+        ],
+        "talent": [
+          "기술 리더십을 발휘할 수 있는 인재",
+          "장기적 관점에서 플랫폼을 설계하는 인재",
+          "조직 전체의 데이터 역량 향상에 기여하는 인재"
+        ],
+        "benefits": [
+          "연봉 협상 가능",
+          "성과급(최대 3개월)",
+          "우수직원 포상금",
+          "임직원 주식매수선택권",
+          "무제한 교육비 지원",
+          "인사이트 컨퍼런스 참석비 지원",
+          "워케이션 지원",
+          "의료/건강검진 지원"
+        ]
+      },
+      "apply": {
+        "method": "일로온 입사지원",
+        "document": [
+          "이력서",
+          "자기소개서",
+          "포트폴리오(또는 기술 블로그)"
+        ]
+      },
+      "recruitment_process": {
+        "total_steps": 4,
+        "steps": [
+          {
+            "step": 1,
+            "name": "서류전형",
+            "description": "경력 및 포트폴리오 검토",
+            "duration": "1주일"
+          },
+          {
+            "step": 2,
+            "name": "기술 심화면접",
+            "description": "아키텍처 설계 및 기술 심화 면접",
+            "duration": "1주일"
+          },
+          {
+            "step": 3,
+            "name": "팀장 면접",
+            "description": "팀장과의 1차 면접",
+            "duration": "1주일"
+          },
+          {
+            "step": 4,
+            "name": "임원 면접",
+            "description": "부서장 최종 면접",
+            "duration": "1주일"
+          }
+        ],
+        "notice": "합격자에 한해 개별 연락"
+      },
+      "ai_recommendation": {
+        "is_recommended": true,
+        "match_score": 95
+      },
+      "stats": {
+        "view_count": 278,
+        "apply_count": 32,
+        "bookmark_count": 64
+      },
+      "dates": {
+        "posted_at": "2026-04-19",
+        "deadline": "2026-05-17",
+        "updated_at": "2026-04-19"
+      }
+    }
+  ]
+}

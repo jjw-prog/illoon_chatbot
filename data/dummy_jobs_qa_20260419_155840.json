@@ -1,0 +1,446 @@
+{
+  "site": "일로온",
+  "category": "QA/테스트",
+  "analyzed_at": "2026-04-19",
+  "trend_summary": {
+    "hot_frameworks": [
+      "Selenium",
+      "Playwright",
+      "Cypress",
+      "Appium"
+    ],
+    "hot_languages": [
+      "Python",
+      "Java",
+      "JavaScript"
+    ],
+    "hot_tools": [
+      "Jenkins",
+      "GitHub Actions",
+      "Jira",
+      "Postman"
+    ],
+    "talent_keywords": [
+      "자동화",
+      "CI/CD",
+      "성능 테스트",
+      "BDD",
+      "버그 추적"
+    ],
+    "salary_trend": "경력 기준 연봉 상승세, SDET 직군 특히 높음",
+    "welfare_trend": "재택근무, 개발 장비 지원, 성장 기회 강조"
+  },
+  "jobs": [
+    {
+      "job_id": "a7f2c9e1-4b6d-47a2-9c8f-3d5e2a1b6c4d",
+      "status": "active",
+      "always_open": false,
+      "company": {
+        "id": "b3e8d1f4-7a2c-4e6f-9b1d-8c3a5f2e7d9a",
+        "name": "하이테크오토메이션",
+        "industry": {
+          "large": "IT/인터넷",
+          "mid": "소프트웨어 개발"
+        },
+        "size": "중소기업",
+        "employee_count": 85
+      },
+      "position": {
+        "title": "SDET (테스트 자동화 엔지니어)",
+        "job_category": {
+          "large": "개발",
+          "mid": "QA/테스트",
+          "small": "테스트 자동화"
+        },
+        "career": {
+          "type": "경력",
+          "min_year": 3,
+          "max_year": 8
+        },
+        "education": {
+          "type": "대졸이상",
+          "required": false
+        },
+        "headcount": 1,
+        "work_type": "하이브리드"
+      },
+      "work_condition": {
+        "location": {
+          "sido": "서울",
+          "sigungu": "마포구",
+          "address": "성산로 123, IT파크 B동"
+        },
+        "salary": {
+          "type": "연봉",
+          "min": 50000000,
+          "max": 70000000,
+          "negotiable": true,
+          "unit": "원"
+        },
+        "work_hours": "09:00~18:00"
+      },
+      "skills": [
+        "Python",
+        "Selenium",
+        "Playwright",
+        "CI/CD",
+        "Jenkins",
+        "GitHub Actions",
+        "pytest"
+      ],
+      "detail": {
+        "main_tasks": [
+          "자동화 테스트 프레임워크 개발 및 유지보수",
+          "E2E 테스트 시나리오 설계 및 구현",
+          "CI/CD 파이프라인 구축 및 최적화",
+          "테스트 커버리지 분석 및 개선"
+        ],
+        "requirements": [
+          "Python 또는 Java 능숙",
+          "Selenium/Playwright 실무 경험 3년 이상",
+          "CI/CD 도구 경험 (Jenkins, GitHub Actions 등)",
+          "테스트 자동화 프로젝트 주도 경험"
+        ],
+        "preferred": [
+          "BDD 프레임워크 경험",
+          "성능 테스트 도구 경험",
+          "마이크로서비스 환경에서의 테스트 경험",
+          "오픈소스 기여 경험"
+        ],
+        "talent": [
+          "자동화에 대한 깊이 있는 이해",
+          "문제 해결 능력",
+          "코드 품질에 대한 관심"
+        ],
+        "benefits": [
+          "유연한 근무 시간",
+          "개발 장비 지원 (최신 맥북)",
+          "테스트 자동화 교육 비용 지원",
+          "분기별 보너스"
+        ]
+      },
+      "apply": {
+        "method": "일로온 입사지원",
+        "document": [
+          "이력서",
+          "자기소개서",
+          "포트폴리오"
+        ]
+      },
+      "recruitment_process": {
+        "total_steps": 4,
+        "steps": [
+          {
+            "step": 1,
+            "name": "서류전형",
+            "description": "경력 및 프로젝트 검토",
+            "duration": "1주일"
+          },
+          {
+            "step": 2,
+            "name": "코딩 테스트",
+            "description": "Python/Java 테스트 자동화 코딩",
+            "duration": "1주일"
+          },
+          {
+            "step": 3,
+            "name": "기술 면접",
+            "description": "자동화 전략 및 아키텍처 논의",
+            "duration": "1주일"
+          },
+          {
+            "step": 4,
+            "name": "최종 면접",
+            "description": "리더십 및 팀 문화 적합도",
+            "duration": "1주일"
+          }
+        ],
+        "notice": "합격자에 한해 개별 연락, 평가 결과 제공"
+      },
+      "ai_recommendation": {
+        "is_recommended": true,
+        "match_score": 0.89
+      },
+      "stats": {
+        "view_count": 287,
+        "apply_count": 34,
+        "bookmark_count": 67
+      },
+      "dates": {
+        "posted_at": "2026-04-19",
+        "deadline": "2026-05-19",
+        "updated_at": "2026-04-19"
+      }
+    },
+    {
+      "job_id": "c5d8e2a1-9f3b-4c7e-8a2d-6b1f5e9c3a7d",
+      "status": "active",
+      "always_open": false,
+      "company": {
+        "id": "d9c1a4f2-5e8b-4g1h-7i2j-3k6l9m2n5o8p",
+        "name": "클라우드넥스트 솔루션",
+        "industry": {
+          "large": "IT/인터넷",
+          "mid": "클라우드 플랫폼"
+        },
+        "size": "중견기업",
+        "employee_count": 320
+      },
+      "position": {
+        "title": "성능 테스트 엔지니어",
+        "job_category": {
+          "large": "개발",
+          "mid": "QA/테스트",
+          "small": "성능 테스트"
+        },
+        "career": {
+          "type": "신입·경력",
+          "min_year": 1,
+          "max_year": 6
+        },
+        "education": {
+          "type": "대졸이상",
+          "required": true
+        },
+        "headcount": 2,
+        "work_type": "하이브리드"
+      },
+      "work_condition": {
+        "location": {
+          "sido": "경기",
+          "sigungu": "판교시",
+          "address": "테헤란로 456, 판교 테크밸리"
+        },
+        "salary": {
+          "type": "연봉",
+          "min": 38000000,
+          "max": 55000000,
+          "negotiable": true,
+          "unit": "원"
+        },
+        "work_hours": "09:00~18:00"
+      },
+      "skills": [
+        "JMeter",
+        "k6",
+        "Locust",
+        "Python",
+        "Java",
+        "Postman",
+        "REST Assured",
+        "Grafana"
+      ],
+      "detail": {
+        "main_tasks": [
+          "클라우드 플랫폼의 성능 테스트 설계 및 실행",
+          "부하 테스트 시나리오 작성 및 실행",
+          "성능 지표 분석 및 병목지점 파악",
+          "성능 테스트 자동화 도구 개발"
+        ],
+        "requirements": [
+          "성능 테스트 도구 경험 (JMeter, k6, Locust 중 1개 이상)",
+          "SQL 및 데이터베이스 이해",
+          "리눅스 환경에서의 작업 경험",
+          "테스트 결과 분석 및 리포팅 경험"
+        ],
+        "preferred": [
+          "클라우드 인프라 이해 (AWS, Azure, GCP)",
+          "마이크로서비스 아키텍처 이해",
+          "시계열 데이터베이스 경험",
+          "스트레스 테스트 경험"
+        ],
+        "talent": [
+          "세밀한 관찰력",
+          "데이터 기반의 사고",
+          "꼼꼼함"
+        ],
+        "benefits": [
+          "성능 테스트 자격증 취득 지원",
+          "최신 기술 스택 학습 기회",
+          "국내외 컨퍼런스 참석 지원",
+          "명절 보너스 200%"
+        ]
+      },
+      "apply": {
+        "method": "일로온 입사지원",
+        "document": [
+          "이력서",
+          "자기소개서"
+        ]
+      },
+      "recruitment_process": {
+        "total_steps": 3,
+        "steps": [
+          {
+            "step": 1,
+            "name": "서류전형",
+            "description": "경력 및 포트폴리오 검토",
+            "duration": "1주일"
+          },
+          {
+            "step": 2,
+            "name": "실무 면접",
+            "description": "성능 테스트 사례 토론",
+            "duration": "1주일"
+          },
+          {
+            "step": 3,
+            "name": "최종 면접",
+            "description": "팀 리더 최종 검증",
+            "duration": "1주일"
+          }
+        ],
+        "notice": "전 단계 합격자 대상 개별 연락"
+      },
+      "ai_recommendation": {
+        "is_recommended": true,
+        "match_score": 0.82
+      },
+      "stats": {
+        "view_count": 412,
+        "apply_count": 56,
+        "bookmark_count": 98
+      },
+      "dates": {
+        "posted_at": "2026-04-19",
+        "deadline": null,
+        "updated_at": "2026-04-19"
+      }
+    },
+    {
+      "job_id": "e3b7d9c2-6f4a-4d8e-7c1f-2a5b8e3f9d6a",
+      "status": "active",
+      "always_open": true,
+      "company": {
+        "id": "f6a2e5d8-1c9b-4e7f-3g2h-5i8j1k4l7m0n",
+        "name": "모바일진화랩",
+        "industry": {
+          "large": "IT/인터넷",
+          "mid": "모바일 애플리케이션"
+        },
+        "size": "스타트업",
+        "employee_count": 42
+      },
+      "position": {
+        "title": "모바일 QA 엔지니어",
+        "job_category": {
+          "large": "개발",
+          "mid": "QA/테스트",
+          "small": "모바일 테스트"
+        },
+        "career": {
+          "type": "신입·경력",
+          "min_year": 0,
+          "max_year": 5
+        },
+        "education": {
+          "type": "대졸이상",
+          "required": false
+        },
+        "headcount": 1,
+        "work_type": "하이브리드"
+      },
+      "work_condition": {
+        "location": {
+          "sido": "서울",
+          "sigungu": "강서구",
+          "address": "양천로 789, 스타트업 허브"
+        },
+        "salary": {
+          "type": "연봉",
+          "min": 32000000,
+          "max": 48000000,
+          "negotiable": true,
+          "unit": "원"
+        },
+        "work_hours": "09:00~18:00"
+      },
+      "skills": [
+        "Appium",
+        "Python",
+        "JavaScript",
+        "TestNG",
+        "Jira",
+        "버그 추적",
+        "회귀 테스트"
+      ],
+      "detail": {
+        "main_tasks": [
+          "iOS 및 Android 애플리케이션 자동화 테스트",
+          "수동 테스트 시나리오 작성 및 실행",
+          "버그 리포팅 및 재현 시나리오 작성",
+          "테스트 전략 수립 및 개선"
+        ],
+        "requirements": [
+          "모바일 테스트 경험 1년 이상",
+          "Appium 또는 유사 자동화 도구 경험",
+          "iOS/Android 기본 이해",
+          "버그 추적 및 관리 경험 (Jira 등)"
+        ],
+        "preferred": [
+          "BDD 테스트 경험",
+          "CI/CD 경험",
+          "성능 및 보안 테스트 경험",
+          "크로스 플랫폼 테스트 경험"
+        ],
+        "talent": [
+          "사용자 관점의 생각",
+          "꼼꼼함",
+          "적극적인 의사소통"
+        ],
+        "benefits": [
+          "자유로운 출퇴근",
+          "핫데스크 근무",
+          "애플리케이션 개발 경험 기회",
+          "빠른 성장 기회",
+          "팀 빌딩 행사 정기 개최"
+        ]
+      },
+      "apply": {
+        "method": "일로온 입사지원",
+        "document": [
+          "이력서",
+          "자기소개서"
+        ]
+      },
+      "recruitment_process": {
+        "total_steps": 3,
+        "steps": [
+          {
+            "step": 1,
+            "name": "서류전형",
+            "description": "이력서 및 포트폴리오 검토",
+            "duration": "3일"
+          },
+          {
+            "step": 2,
+            "name": "실무 면접",
+            "description": "테스트 사례 분석 및 토론",
+            "duration": "1주일"
+          },
+          {
+            "step": 3,
+            "name": "최종 면접",
+            "description": "문화 적합도 및 역량 확인",
+            "duration": "1주일"
+          }
+        ],
+        "notice": "합격 시 신속한 입사 진행, 면접 일정은 유동적"
+      },
+      "ai_recommendation": {
+        "is_recommended": false,
+        "match_score": null
+      },
+      "stats": {
+        "view_count": 523,
+        "apply_count": 78,
+        "bookmark_count": 142
+      },
+      "dates": {
+        "posted_at": "2026-04-19",
+        "deadline": null,
+        "updated_at": "2026-04-19"
+      }
+    }
+  ]
+}

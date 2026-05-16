@@ -1,0 +1,428 @@
+{
+  "site": "일로온",
+  "category": "게임",
+  "analyzed_at": "2026-04-19",
+  "trend_summary": {
+    "hot_frameworks": [
+      "Unity",
+      "Unreal Engine"
+    ],
+    "hot_languages": [
+      "C#",
+      "C++",
+      "Go",
+      "Java"
+    ],
+    "hot_tools": [
+      "Redis",
+      "MongoDB",
+      "AWS"
+    ],
+    "talent_keywords": [
+      "러닝커브 완만",
+      "신입 친화적",
+      "인디게임 경험"
+    ],
+    "salary_trend": "경력에 따라 4000만원~7000만원대 형성",
+    "welfare_trend": "유연근무, 게임 라이선스 지원, 교육비 지원 증가"
+  },
+  "jobs": [
+    {
+      "job_id": "a7c4d2f1-3e9b-4c6a-8d1e-5f2a9b7c4e6d",
+      "status": "active",
+      "always_open": false,
+      "company": {
+        "id": "b9e3f5a2-7c1d-4b8e-9a2f-6d4c1e8a3f5b",
+        "name": "피크스타 게임즈",
+        "industry": {
+          "large": "IT/인터넷",
+          "mid": "게임개발"
+        },
+        "size": "스타트업",
+        "employee_count": 35
+      },
+      "position": {
+        "title": "Unity 게임 클라이언트 개발자",
+        "job_category": {
+          "large": "개발",
+          "mid": "게임",
+          "small": "클라이언트개발"
+        },
+        "career": {
+          "type": "신입·경력",
+          "min_year": 0,
+          "max_year": 3
+        },
+        "education": {
+          "type": "대졸이상",
+          "required": false
+        },
+        "headcount": 2,
+        "work_type": "하이브리드"
+      },
+      "work_condition": {
+        "location": {
+          "sido": "서울",
+          "sigungu": "마포구",
+          "address": "마포대로 100, 8층"
+        },
+        "salary": {
+          "type": "연봉",
+          "min": 40000000,
+          "max": 55000000,
+          "negotiable": true,
+          "unit": "원"
+        },
+        "work_hours": "10:00~19:00"
+      },
+      "skills": [
+        "Unity",
+        "C#",
+        "게임최적화",
+        "멀티플레이어네트워킹"
+      ],
+      "detail": {
+        "main_tasks": [
+          "모바일 게임 클라이언트 개발",
+          "게임플레이 기능 구현",
+          "UI/UX 연동 개발",
+          "성능 최적화 및 버그 수정"
+        ],
+        "requirements": [
+          "Unity 경험 1년 이상",
+          "C# 기본 이상 수준",
+          "게임 개발 관심도 높은 분"
+        ],
+        "preferred": [
+          "게임 출시 경험",
+          "인디게임 개발 경험",
+          "멀티플레이 게임 개발 경험"
+        ],
+        "talent": [
+          "성장을 즐기는 개발자",
+          "협업을 중시하는 팀플레이어"
+        ],
+        "benefits": [
+          "게임 라이선스 지원",
+          "교육비 지원",
+          "유연 근무제",
+          "정기 팀빌딩"
+        ]
+      },
+      "apply": {
+        "method": "일로온 입사지원",
+        "document": [
+          "이력서",
+          "자기소개서",
+          "포트폴리오"
+        ]
+      },
+      "recruitment_process": {
+        "total_steps": 3,
+        "steps": [
+          {
+            "step": 1,
+            "name": "서류전형",
+            "description": "포트폴리오 및 경력 검토",
+            "duration": "3일"
+          },
+          {
+            "step": 2,
+            "name": "코딩테스트",
+            "description": "Unity 실전 코딩 테스트",
+            "duration": "1주일"
+          },
+          {
+            "step": 3,
+            "name": "최종면접",
+            "description": "팀리더 및 임원 면접",
+            "duration": "1주일"
+          }
+        ],
+        "notice": "합격자에 한해 개별 연락"
+      },
+      "ai_recommendation": {
+        "is_recommended": true,
+        "match_score": 0.88
+      },
+      "stats": {
+        "view_count": 342,
+        "apply_count": 28,
+        "bookmark_count": 54
+      },
+      "dates": {
+        "posted_at": "2026-04-19",
+        "deadline": null,
+        "updated_at": "2026-04-19"
+      }
+    },
+    {
+      "job_id": "c5e8a1f3-2d7b-4a9c-6e4f-8c3a1d9e5b2f",
+      "status": "active",
+      "always_open": false,
+      "company": {
+        "id": "d1f4b8e7-5c2a-4d9f-7e1a-3c6b9d2f4a8e",
+        "name": "노바 엔진 랩",
+        "industry": {
+          "large": "IT/인터넷",
+          "mid": "게임개발"
+        },
+        "size": "중소기업",
+        "employee_count": 82
+      },
+      "position": {
+        "title": "게임 서버 개발자 (Go)",
+        "job_category": {
+          "large": "개발",
+          "mid": "게임",
+          "small": "백엔드개발"
+        },
+        "career": {
+          "type": "신입·경력",
+          "min_year": 0,
+          "max_year": 5
+        },
+        "education": {
+          "type": "대졸이상",
+          "required": false
+        },
+        "headcount": 1,
+        "work_type": "하이브리드"
+      },
+      "work_condition": {
+        "location": {
+          "sido": "경기",
+          "sigungu": "판교",
+          "address": "판교로 225, 빌딩B 5층"
+        },
+        "salary": {
+          "type": "연봉",
+          "min": 50000000,
+          "max": 65000000,
+          "negotiable": true,
+          "unit": "원"
+        },
+        "work_hours": "09:00~18:00"
+      },
+      "skills": [
+        "Go",
+        "게임서버",
+        "Redis",
+        "MongoDB",
+        "AWS",
+        "멀티플레이어네트워킹"
+      ],
+      "detail": {
+        "main_tasks": [
+          "라이브 게임 백엔드 시스템 개발",
+          "멀티플레이어 서버 구축 및 유지보수",
+          "데이터베이스 설계 및 최적화",
+          "실시간 통신 프로토콜 개발"
+        ],
+        "requirements": [
+          "Go 또는 Java 경험 2년 이상",
+          "게임 서버 개발 기초 이해",
+          "네트워킹 개념 이해"
+        ],
+        "preferred": [
+          "Go로 서비스 운영 경험",
+          "Redis/MongoDB 실무 경험",
+          "AWS 클라우드 경험",
+          "게임 개발 경험"
+        ],
+        "talent": [
+          "안정적이고 확장성 있는 코드를 추구하는 개발자",
+          "문제 해결 능력이 뛰어난 분"
+        ],
+        "benefits": [
+          "성과급 지급",
+          "연차 충분 지급",
+          "게임 라이선스 지원",
+          "기술 컨퍼런스 참여 지원"
+        ]
+      },
+      "apply": {
+        "method": "일로온 입사지원",
+        "document": [
+          "이력서",
+          "자기소개서"
+        ]
+      },
+      "recruitment_process": {
+        "total_steps": 4,
+        "steps": [
+          {
+            "step": 1,
+            "name": "서류전형",
+            "description": "경력 및 프로젝트 검토",
+            "duration": "5일"
+          },
+          {
+            "step": 2,
+            "name": "실무면접",
+            "description": "개발팀 리더와 기술 면접",
+            "duration": "1주일"
+          },
+          {
+            "step": 3,
+            "name": "기술과제",
+            "description": "실전 게임 서버 개발 과제",
+            "duration": "1주일"
+          },
+          {
+            "step": 4,
+            "name": "최종면접",
+            "description": "임원 및 CTO 면접",
+            "duration": "1주일"
+          }
+        ],
+        "notice": "합격자에 한해 개별 연락"
+      },
+      "ai_recommendation": {
+        "is_recommended": true,
+        "match_score": 0.92
+      },
+      "stats": {
+        "view_count": 521,
+        "apply_count": 45,
+        "bookmark_count": 89
+      },
+      "dates": {
+        "posted_at": "2026-04-19",
+        "deadline": null,
+        "updated_at": "2026-04-19"
+      }
+    },
+    {
+      "job_id": "e9f2d5c1-7a4b-4e8d-3f1c-6a9d2b5e8c4f",
+      "status": "active",
+      "always_open": true,
+      "company": {
+        "id": "f3a7e1d4-2c9b-4d6f-8e5a-1c3f7a9d2b6e",
+        "name": "크리에이티브 홀로우",
+        "industry": {
+          "large": "IT/인터넷",
+          "mid": "게임개발"
+        },
+        "size": "스타트업",
+        "employee_count": 28
+      },
+      "position": {
+        "title": "Unreal Engine 게임 개발자",
+        "job_category": {
+          "large": "개발",
+          "mid": "게임",
+          "small": "엔진개발"
+        },
+        "career": {
+          "type": "신입",
+          "min_year": 0,
+          "max_year": 1
+        },
+        "education": {
+          "type": "대졸이상",
+          "required": false
+        },
+        "headcount": 1,
+        "work_type": "온사이트"
+      },
+      "work_condition": {
+        "location": {
+          "sido": "서울",
+          "sigungu": "강남구",
+          "address": "테헤란로 405, 스타트업빌 3층"
+        },
+        "salary": {
+          "type": "연봉",
+          "min": 35000000,
+          "max": 50000000,
+          "negotiable": true,
+          "unit": "원"
+        },
+        "work_hours": "10:00~19:00"
+      },
+      "skills": [
+        "Unreal Engine",
+        "C++",
+        "Blueprint",
+        "렌더링",
+        "셰이더",
+        "HLSL"
+      ],
+      "detail": {
+        "main_tasks": [
+          "AAA급 게임 프로토타입 개발",
+          "게임플레이 및 시스템 구현",
+          "렌더링 파이프라인 최적화",
+          "물리 엔진 연동 개발"
+        ],
+        "requirements": [
+          "Unreal Engine 기본 이해",
+          "C++ 또는 Blueprint 경험",
+          "게임 개발에 대한 열정"
+        ],
+        "preferred": [
+          "언리얼 엔진 프로젝트 완성 경험",
+          "인디게임 개발 경험",
+          "3D 게임 개발 경험"
+        ],
+        "talent": [
+          "새로운 기술을 빠르게 습득하는 개발자",
+          "창의적인 게임 개발 아이디어를 제안할 수 있는 분"
+        ],
+        "benefits": [
+          "정기 교육 지원",
+          "개발 도구 및 리소스 완전 제공",
+          "유연한 근무 시간",
+          "게임 발매 시 성과금"
+        ]
+      },
+      "apply": {
+        "method": "일로온 입사지원",
+        "document": [
+          "이력서",
+          "자기소개서",
+          "포트폴리오"
+        ]
+      },
+      "recruitment_process": {
+        "total_steps": 3,
+        "steps": [
+          {
+            "step": 1,
+            "name": "서류전형",
+            "description": "포트폴리오 및 자기소개서 검토",
+            "duration": "1주일"
+          },
+          {
+            "step": 2,
+            "name": "기술면접",
+            "description": "개발팀과 언리얼 기술 면접",
+            "duration": "1주일"
+          },
+          {
+            "step": 3,
+            "name": "최종면접",
+            "description": "대표 및 리드 개발자 면접",
+            "duration": "1주일"
+          }
+        ],
+        "notice": "합격자에 한해 개별 연락"
+      },
+      "ai_recommendation": {
+        "is_recommended": true,
+        "match_score": 0.85
+      },
+      "stats": {
+        "view_count": 287,
+        "apply_count": 19,
+        "bookmark_count": 42
+      },
+      "dates": {
+        "posted_at": "2026-04-19",
+        "deadline": null,
+        "updated_at": "2026-04-19"
+      }
+    }
+  ]
+}

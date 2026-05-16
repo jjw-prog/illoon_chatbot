@@ -1,0 +1,146 @@
+[
+  {
+    "user_id": "575a97eb-e0af-4610-981f-ca524062f869",
+    "job_type": "백엔드 개발",
+    "region": "서울",
+    "occupation": "백엔드/서버",
+    "career_type": "경력",
+    "education": "대학교졸업"
+  },
+  {
+    "user_id": "e0aa2810-2544-4724-ae5e-75bf822a7b07",
+    "job_type": "백엔드 개발",
+    "region": "판교",
+    "occupation": "백엔드/서버",
+    "career_type": "신입",
+    "education": "대학교졸업"
+  },
+  {
+    "user_id": "d58da5f5-c9d5-4c79-81d2-33a464f4217c",
+    "job_type": "Java 백엔드 개발",
+    "region": "서울",
+    "occupation": "백엔드/서버",
+    "career_type": "경력",
+    "education": "대학교졸업"
+  },
+  {
+    "user_id": "9a85ffa8-d6a3-4a13-9db7-ce5f117b36ca",
+    "job_type": "Python 백엔드 개발",
+    "region": "서울",
+    "occupation": "백엔드/서버",
+    "career_type": "경력",
+    "education": "대학원졸업"
+  },
+  {
+    "user_id": "e0da45d2-b8d3-467e-9248-cf12903b76bd",
+    "job_type": "프론트엔드 개발",
+    "region": "서울",
+    "occupation": "프론트엔드",
+    "career_type": "신입",
+    "education": "대학교졸업"
+  },
+  {
+    "user_id": "48d30914-a600-4e99-84af-e88774a911fa",
+    "job_type": "React 프론트엔드",
+    "region": "서울",
+    "occupation": "프론트엔드",
+    "career_type": "경력",
+    "education": "대학교졸업"
+  },
+  {
+    "user_id": "5298e152-6a82-41a0-90de-48bda92c5356",
+    "job_type": "AI/ML 엔지니어",
+    "region": "판교",
+    "occupation": "AI/ML",
+    "career_type": "경력",
+    "education": "대학원졸업"
+  },
+  {
+    "user_id": "648ad26c-7f5f-45c5-8a3c-ccbcb3d07731",
+    "job_type": "데이터 엔지니어",
+    "region": "서울",
+    "occupation": "데이터엔지니어링",
+    "career_type": "경력",
+    "education": "대학교졸업"
+  },
+  {
+    "user_id": "27379f57-57c5-45f3-8d62-f431d2f7ccb0",
+    "job_type": "데이터 분석가",
+    "region": "서울",
+    "occupation": "데이터분석",
+    "career_type": "신입",
+    "education": "대학교졸업"
+  },
+  {
+    "user_id": "d917c43e-82f5-4116-8142-841c33c0087a",
+    "job_type": "DevOps 엔지니어",
+    "region": "서울",
+    "occupation": "인프라/DevOps",
+    "career_type": "경력",
+    "education": "대학교졸업"
+  },
+  {
+    "user_id": "23cb7dbf-b11f-4bf6-be74-563b295a8f53",
+    "job_type": "클라우드 엔지니어",
+    "region": "판교",
+    "occupation": "인프라/DevOps",
+    "career_type": "경력",
+    "education": "대학교졸업"
+  },
+  {
+    "user_id": "fed63b62-322b-44b9-bc78-b191c3d5dffe",
+    "job_type": "iOS 개발",
+    "region": "서울",
+    "occupation": "모바일",
+    "career_type": "경력",
+    "education": "대학교졸업"
+  },
+  {
+    "user_id": "185cc344-7d92-43bd-9cca-b051b6c12473",
+    "job_type": "Android 개발",
+    "region": "서울",
+    "occupation": "모바일",
+    "career_type": "신입",
+    "education": "대학교졸업"
+  },
+  {
+    "user_id": "cf78cd5d-50bd-410c-8e73-6398358fac91",
+    "job_type": "보안 엔지니어",
+    "region": "서울",
+    "occupation": "보안",
+    "career_type": "경력",
+    "education": "대학교졸업"
+  },
+  {
+    "user_id": "d66207c8-262f-4069-bccf-6a5e755d4760",
+    "job_type": "QA 엔지니어",
+    "region": "서울",
+    "occupation": "QA",
+    "career_type": "신입",
+    "education": "대학교졸업"
+  },
+  {
+    "user_id": "8a26955b-e469-4bdc-a5c4-b7e555a04f72",
+    "job_type": "프로덕트 매니저",
+    "region": "서울",
+    "occupation": "PM/기획",
+    "career_type": "경력",
+    "education": "대학교졸업"
+  },
+  {
+    "user_id": "fd24f1e4-681d-4a44-bfec-8e0d3da33448",
+    "job_type": "게임 클라이언트 개발",
+    "region": "판교",
+    "occupation": "게임개발",
+    "career_type": "경력",
+    "education": "대학교졸업"
+  },
+  {
+    "user_id": "d580f87b-e1a6-48df-8b3d-dbbc09a66329",
+    "job_type": "풀스택 개발",
+    "region": "부산",
+    "occupation": "풀스택",
+    "career_type": "경력",
+    "education": "전문대졸업"
+  }
+]
