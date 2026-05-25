@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
-from rag import search_jobs, search_trends, generate_answer, find_similar_faq, classify_intent
+from rag import search_jobs, search_trends, generate_answer, classify_intent
 from loader import get_user_info, load_faqs
 
 # ============================
@@ -36,6 +36,7 @@ class ChatRequest(BaseModel):
     user_id: Optional[str] = None               # 유저 ID
     user_info: Optional[dict] = None            # 직접 유저 정보 넘길 때 (선택사항)
     is_faq: Optional[bool] = False              # FAQ 버튼 클릭 여부
+    faq_category: Optional[str] = None          # FAQ 카테고리 ("나의 검색" or "공고/채용정보")
     history: Optional[List[ChatMessage]] = []   # 이전 대화 히스토리
 
 
@@ -77,17 +78,29 @@ def chat(request: ChatRequest):
     # FAQ 버튼 클릭 처리 (Intent 분류 안 거침)
     # ============================
     if request.is_faq:
-        related_jobs = search_jobs(query, user_info=user_info)
+        print(f"FAQ 처리: {query} (카테고리: {request.faq_category})")
+
+        # 나의 검색 → 유저 정보 반영
+        if request.faq_category == "나의 검색":
+            related_jobs = search_jobs(query, user_info=user_info)
+            faq_user_info = user_info
+        # 공고/채용정보 → 유저 정보 없이
+        else:
+            related_jobs = search_jobs(query, user_info=None)
+            faq_user_info = None
+
         related_trends = search_trends(query)
         reply = generate_answer(
             query=query,
             related_jobs=related_jobs,
-            user_info=user_info,
+            user_info=faq_user_info,
             history=history,
             related_trends=related_trends
         )
         return {
             "reply": reply,
+            "intent": "FAQ",
+            "faq_category": request.faq_category,
             "user_message": {"role": "user", "content": query},
             "assistant_message": {"role": "assistant", "content": reply}
         }
@@ -100,15 +113,24 @@ def chat(request: ChatRequest):
 
     # INVALID → 취업 무관 질문 차단
     if intent == "INVALID":
-        return {"reply": "저는 취업 관련 질문만 답변할 수 있어요! 공고 추천, 취업 정보 등을 물어봐주세요 😊"}
+        return {
+            "reply": "저는 취업 관련 질문만 답변할 수 있어요! 공고 추천, 취업 정보 등을 물어봐주세요 😊",
+            "intent": intent
+        }
 
     # COMPANY → 기업 정보 안내
     if intent == "COMPANY":
-        return {"reply": "정확한 기업 정보는 공고 상세페이지를 확인해주세요 😊"}
+        return {
+            "reply": "정확한 기업 정보는 공고 상세페이지를 확인해주세요 😊",
+            "intent": intent
+        }
 
     # PUBLIC_DATA → 공공데이터 준비 중 안내
     if intent == "PUBLIC_DATA":
-        return {"reply": "공공기관 채용 정보는 현재 준비 중입니다 😊"}
+        return {
+            "reply": "공공기관 채용 정보는 현재 준비 중입니다 😊",
+            "intent": intent
+        }
 
     # CAREER_TIP → Claude 자체 지식으로 답변 (공고/트렌드 데이터 없이)
     if intent == "CAREER_TIP":
@@ -121,6 +143,7 @@ def chat(request: ChatRequest):
         )
         return {
             "reply": reply,
+            "intent": intent,
             "user_message": {"role": "user", "content": query},
             "assistant_message": {"role": "assistant", "content": reply}
         }
@@ -137,6 +160,7 @@ def chat(request: ChatRequest):
         )
         return {
             "reply": reply,
+            "intent": intent,
             "user_message": {"role": "user", "content": query},
             "assistant_message": {"role": "assistant", "content": reply}
         }
@@ -153,6 +177,7 @@ def chat(request: ChatRequest):
         )
         return {
             "reply": reply,
+            "intent": intent,
             "user_message": {"role": "user", "content": query},
             "assistant_message": {"role": "assistant", "content": reply}
         }
@@ -168,6 +193,7 @@ def chat(request: ChatRequest):
     )
     return {
         "reply": reply,
+        "intent": intent,
         "user_message": {"role": "user", "content": query},
         "assistant_message": {"role": "assistant", "content": reply}
     }
