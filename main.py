@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 from rag import search_jobs, search_trends, generate_answer, classify_intent
-from loader import get_user_info, load_faqs
+from loader import get_user_info, load_quick_replies
 
 # ============================
 # FastAPI 앱 설정
@@ -35,9 +35,18 @@ class ChatRequest(BaseModel):
     message: str                                # 유저가 보낸 메시지
     user_id: Optional[str] = None               # 유저 ID
     user_info: Optional[dict] = None            # 직접 유저 정보 넘길 때 (선택사항)
-    is_faq: Optional[bool] = False              # FAQ 버튼 클릭 여부
-    faq_category: Optional[str] = None          # FAQ 카테고리 ("나의 검색" or "공고/채용정보")
+    is_quick_replies: Optional[bool] = False
+    quick_replies_category: Optional[str] = None
     history: Optional[List[ChatMessage]] = []   # 이전 대화 히스토리
+
+
+# ============================
+# 유틸 함수
+# ============================
+
+def extract_sources(jobs: list) -> list:
+    """검색된 공고 리스트에서 job_id만 추출해서 반환"""
+    return [job.get("job_id", "") for job in jobs if job.get("job_id")]
 
 
 # ============================
@@ -50,11 +59,23 @@ def health_check():
     return {"status": "ok"}
 
 
-# FAQ 목록 반환 엔드포인트 - 프론트에서 버튼 목록 가져올 때 사용
-@app.get("/faq")
-def get_faqs():
-    faqs = load_faqs()
-    return {"faqs": faqs}
+# 퀵리플라이 버튼 목록 반환 엔드포인트 - 프론트에서 버튼 목록 가져올 때 사용
+@app.get("/chat/quick-replies")
+def get_quick_replies():
+    quick_replies = load_quick_replies()
+
+    # 카테고리별로 묶기 (keywords 제외)
+    result = {}
+    for quick_reply in quick_replies:
+        category = quick_reply.get("category", "")
+        if category not in result:
+            result[category] = []
+        result[category].append({
+            "id": quick_reply.get("id"),
+            "question": quick_reply.get("question")
+        })
+
+    return result
 
 
 # 챗봇 메인 엔드포인트
@@ -64,7 +85,7 @@ def chat(request: ChatRequest):
 
     # 입력 필터링 - 너무 짧거나 의미없는 질문 차단
     if len(query.strip()) < 2:
-        return {"reply": "질문을 좀 더 구체적으로 입력해주세요 😊"}
+        return {"answer": "질문을 좀 더 구체적으로 입력해주세요 😊"}
 
     # 히스토리를 딕셔너리 형태로 변환 (LLM에 넘기기 위해)
     history = [{"role": msg.role, "content": msg.content} for msg in request.history]
@@ -75,34 +96,33 @@ def chat(request: ChatRequest):
         user_info = get_user_info(request.user_id)
 
     # ============================
-    # FAQ 버튼 클릭 처리 (Intent 분류 안 거침)
+    # 퀵리플라이 버튼 클릭 처리 (Intent 분류 안 거침)
     # ============================
-    if request.is_faq:
-        print(f"FAQ 처리: {query} (카테고리: {request.faq_category})")
+    if request.is_quick_replies:
+        print(f"퀵리플라이 처리: {query} (카테고리: {request.quick_replies_category})")
 
-        # 나의 검색 → 유저 정보 반영
-        if request.faq_category == "나의 검색":
+        if request.quick_replies_category == "나의 검색":
             related_jobs = search_jobs(query, user_info=user_info)
-            faq_user_info = user_info
-        # 공고/채용정보 → 유저 정보 없이
+            quick_replies_user_info = user_info
         else:
             related_jobs = search_jobs(query, user_info=None)
-            faq_user_info = None
+            quick_replies_user_info = None
 
         related_trends = search_trends(query)
-        reply = generate_answer(
+        answer = generate_answer(
             query=query,
             related_jobs=related_jobs,
-            user_info=faq_user_info,
+            user_info=quick_replies_user_info,
             history=history,
             related_trends=related_trends
         )
         return {
-            "reply": reply,
-            "intent": "FAQ",
-            "faq_category": request.faq_category,
+            "answer": answer,
+            "sources": extract_sources(related_jobs),
+            "intent": "QUICK_REPLIES",
+            "quick_replies_category": request.quick_replies_category,
             "user_message": {"role": "user", "content": query},
-            "assistant_message": {"role": "assistant", "content": reply}
+            "assistant_message": {"role": "assistant", "content": answer}
         }
 
     # ============================
@@ -114,27 +134,30 @@ def chat(request: ChatRequest):
     # INVALID → 취업 무관 질문 차단
     if intent == "INVALID":
         return {
-            "reply": "저는 취업 관련 질문만 답변할 수 있어요! 공고 추천, 취업 정보 등을 물어봐주세요 😊",
+            "answer": "저는 취업 관련 질문만 답변할 수 있어요! 공고 추천, 취업 정보 등을 물어봐주세요 😊",
+            "sources": [],
             "intent": intent
         }
 
     # COMPANY → 기업 정보 안내
     if intent == "COMPANY":
         return {
-            "reply": "정확한 기업 정보는 공고 상세페이지를 확인해주세요 😊",
+            "answer": "정확한 기업 정보는 공고 상세페이지를 확인해주세요 😊",
+            "sources": [],
             "intent": intent
         }
 
     # PUBLIC_DATA → 공공데이터 준비 중 안내
     if intent == "PUBLIC_DATA":
         return {
-            "reply": "공공기관 채용 정보는 현재 준비 중입니다 😊",
+            "answer": "공공기관 채용 정보는 현재 준비 중입니다 😊",
+            "sources": [],
             "intent": intent
         }
 
     # CAREER_TIP → Claude 자체 지식으로 답변 (공고/트렌드 데이터 없이)
     if intent == "CAREER_TIP":
-        reply = generate_answer(
+        answer = generate_answer(
             query=query,
             related_jobs=[],
             user_info=None,
@@ -142,16 +165,17 @@ def chat(request: ChatRequest):
             related_trends=[]
         )
         return {
-            "reply": reply,
+            "answer": answer,
+            "sources": [],
             "intent": intent,
             "user_message": {"role": "user", "content": query},
-            "assistant_message": {"role": "assistant", "content": reply}
+            "assistant_message": {"role": "assistant", "content": answer}
         }
 
     # TREND → 트렌드 데이터로 답변
     if intent == "TREND":
         related_trends = search_trends(query)
-        reply = generate_answer(
+        answer = generate_answer(
             query=query,
             related_jobs=[],
             user_info=None,
@@ -159,16 +183,17 @@ def chat(request: ChatRequest):
             related_trends=related_trends
         )
         return {
-            "reply": reply,
+            "answer": answer,
+            "sources": [],
             "intent": intent,
             "user_message": {"role": "user", "content": query},
-            "assistant_message": {"role": "assistant", "content": reply}
+            "assistant_message": {"role": "assistant", "content": answer}
         }
 
     # CUSTOM → 설문 데이터 + 공고 데이터로 맞춤 답변
     if intent == "CUSTOM":
         related_jobs = search_jobs(query, user_info=user_info)
-        reply = generate_answer(
+        answer = generate_answer(
             query=query,
             related_jobs=related_jobs,
             user_info=user_info,
@@ -176,15 +201,16 @@ def chat(request: ChatRequest):
             related_trends=[]
         )
         return {
-            "reply": reply,
+            "answer": answer,
+            "sources": extract_sources(related_jobs),
             "intent": intent,
             "user_message": {"role": "user", "content": query},
-            "assistant_message": {"role": "assistant", "content": reply}
+            "assistant_message": {"role": "assistant", "content": answer}
         }
 
     # GENERAL → 공고 데이터로 일반 답변 (설문 데이터 X)
     related_jobs = search_jobs(query, user_info=None)
-    reply = generate_answer(
+    answer = generate_answer(
         query=query,
         related_jobs=related_jobs,
         user_info=None,
@@ -192,8 +218,9 @@ def chat(request: ChatRequest):
         related_trends=[]
     )
     return {
-        "reply": reply,
+        "answer": answer,
+        "sources": extract_sources(related_jobs),
         "intent": intent,
         "user_message": {"role": "user", "content": query},
-        "assistant_message": {"role": "assistant", "content": reply}
+        "assistant_message": {"role": "assistant", "content": answer}
     }

@@ -5,7 +5,7 @@ import faiss
 import anthropic
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
-from loader import load_all_jobs, load_faqs, load_trend_summaries, load_intent_examples
+from loader import load_all_jobs, load_quick_replies, load_trend_summaries, load_intent_examples
 
 # ============================
 # 초기 설정
@@ -40,8 +40,8 @@ jobs = load_all_jobs()
 print("트렌드 데이터 벡터 인덱스 구축 중...")
 trends = load_trend_summaries()
 
-# FAQ 데이터 로드
-faqs = load_faqs()
+# 퀵리플라이 데이터 로드
+quick_replies = load_quick_replies()
 
 
 # ============================
@@ -73,12 +73,12 @@ def build_intent_index(intent_examples: list):
     return index, example_labels  # 인덱스와 레이블 같이 반환
 
 
-def build_faq_index(faqs: list):
-    """FAQ 질문들을 벡터로 변환하고 FAISS 인덱스 구축"""
-    faq_texts = [faq.get("question", "") for faq in faqs]
+def build_quick_replies_index(quick_replies: list):
+    """퀵리플라이 질문들을 벡터로 변환하고 FAISS 인덱스 구축"""
+    quick_reply_texts = [quick_reply.get("question", "") for quick_reply in quick_replies]
 
-    # FAQ 질문들을 벡터로 변환
-    embeddings = embedding_model.encode(faq_texts)
+    # 퀵리플라이 질문들을 벡터로 변환
+    embeddings = embedding_model.encode(quick_reply_texts)
     embeddings = np.array(embeddings).astype("float32")
 
     # FAISS 인덱스 생성
@@ -163,9 +163,9 @@ print(f"공고 인덱스 구축 완료! 총 {len(jobs)}개 공고 인덱싱됨")
 trend_index = build_trend_index(trends)
 print(f"트렌드 인덱스 구축 완료! 총 {len(trends)}개 카테고리 인덱싱됨")
 
-# FAQ 인덱스 구축
-faq_index = build_faq_index(faqs)
-print(f"FAQ 인덱스 구축 완료! 총 {len(faqs)}개 FAQ 인덱싱됨")
+# 퀵리플라이 인덱스 구축
+quick_replies_index = build_quick_replies_index(quick_replies)
+print(f"퀵리플라이 인덱스 구축 완료! 총 {len(quick_replies)}개 퀵리플라이 인덱싱됨")
 
 
 # ============================
@@ -261,10 +261,12 @@ def search_jobs(query: str, user_info: dict = None, top_k: int = 3):
     # 유저 정보가 있으면 검색 쿼리에 추가해서 맞춤 검색
     if user_info:
         search_text += " " + " ".join([
-            user_info.get("job_type", ""),
-            user_info.get("region", ""),
-            user_info.get("career_type", ""),
-            user_info.get("occupation", "")
+            user_info.get("job_type") or "",
+            user_info.get("region") or "",
+            user_info.get("career_type") or "",
+            user_info.get("occupation") or "",
+            user_info.get("major") or "",
+            user_info.get("career_years") or "",
         ])
 
     # 쿼리를 벡터로 변환
@@ -302,22 +304,22 @@ def search_trends(query: str, top_k: int = 3):
     return results
 
 
-def find_similar_faq(query: str, threshold: float = 30.0):
-    """유저 질문과 가장 유사한 FAQ 케이스 찾기"""
+def find_similar_quick_reply(query: str, threshold: float = 30.0):
+    """유저 질문과 가장 유사한 퀵리플라이 케이스 찾기"""
 
     # 쿼리를 벡터로 변환
     query_vector = embedding_model.encode([query])
     query_vector = np.array(query_vector).astype("float32")
 
-    # 가장 유사한 FAQ 검색
-    distances, indices = faq_index.search(query_vector, 1)
+    # 가장 유사한 퀵리플라이 검색
+    distances, indices = quick_replies_index.search(query_vector, 1)
 
     distance = distances[0][0]
     idx = indices[0][0]
 
-    # 유사도가 임계값 이하면 해당 FAQ 반환
+    # 유사도가 임계값 이하면 해당 퀵리플라이 반환
     if distance < threshold:
-        return faqs[idx], distance
+        return quick_replies[idx], distance
 
     return None, distance
 
@@ -362,13 +364,22 @@ def generate_answer(query: str, related_jobs: list, user_info: dict = None, hist
     # 유저 맞춤 정보가 있으면 프롬프트에 반영
     user_context = ""
     if user_info:
+        # 재직 여부 텍스트 처리
+        is_employed = user_info.get("재직중")
+        employed_text = "재직 중" if is_employed else "미재직"
+
         user_context = f"""
 사용자 정보:
 - 희망 직무: {user_info.get('job_type', '미설정')}
 - 희망 지역: {user_info.get('region', '미설정')}
 - 직종: {user_info.get('occupation', '미설정')}
-- 경력: {user_info.get('career_type', '미설정')}
+- 경력 유형: {user_info.get('career_type', '미설정')}
 - 학력: {user_info.get('education', '미설정')}
+- 대학교: {user_info.get('university', '미설정')}
+- 전공: {user_info.get('major', '미설정')}
+- 경력 연수: {user_info.get('career_years', '미설정')}
+- 재직 중인 회사: {user_info.get('company_name', '미설정')}
+- 재직 여부: {employed_text}
 """
 
     # 시스템 프롬프트

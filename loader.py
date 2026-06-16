@@ -10,12 +10,12 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
 # 각 데이터 파일 경로
 SURVEY_FILE = os.path.join(DATA_DIR, "dummy_surveys.json")
-FAQ_FILE = os.path.join(DATA_DIR, "faq.json")
+QUICK_REPLIES_FILE = os.path.join(DATA_DIR, "quick_replies.json")
 INTENT_EXAMPLES_FILE = os.path.join(DATA_DIR, "intent_examples.json")
 
 # 공고 데이터 로드 시 제외할 파일 목록
 # 새로운 비공고 데이터 파일 추가 시 여기에 파일명 추가하면 됨
-EXCLUDED_FILES = ["dummy_surveys.json", "faq.json", "intent_examples.json"]
+EXCLUDED_FILES = ["dummy_surveys.json", "quick_replies.json", "intent_examples.json"]
 
 
 # ============================
@@ -133,11 +133,11 @@ def get_user_info(user_id: str):
 
 
 # ============================
-# FAQ 데이터
+# 퀵리플라이 데이터
 # ============================
 
-def load_faqs():
-    """FAQ 질문 데이터 로드"""
-    with open(FAQ_FILE, "r", encoding="utf-8") as f:
+def load_quick_replies():
+    """퀵리플라이 질문 데이터 로드"""
+    with open(QUICK_REPLIES_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
-    return data.get("faqs", [])
+    return data.get("quick_replies", [])
