@@ -141,3 +141,28 @@ def load_quick_replies():
     with open(QUICK_REPLIES_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
     return data.get("quick_replies", [])
+
+# ============================
+# 카테고리별 통계 집계
+# ============================
+
+def get_category_stats():
+    """카테고리별 공고 수, 조회수, 지원수, 스크랩수 집계"""
+    all_jobs = load_all_jobs()
+    stats = {}
+
+    for job in all_jobs:
+        category = job.get("category", "")
+        if category not in stats:
+            stats[category] = {
+                "count": 0,          # 공고 수
+                "view_count": 0,     # 총 조회수
+                "apply_count": 0,    # 총 지원수
+                "bookmark_count": 0  # 총 스크랩수
+            }
+        stats[category]["count"] += 1
+        stats[category]["view_count"] += job.get("stats", {}).get("view_count", 0)
+        stats[category]["apply_count"] += job.get("stats", {}).get("apply_count", 0)
+        stats[category]["bookmark_count"] += job.get("stats", {}).get("bookmark_count", 0)
+
+    return stats

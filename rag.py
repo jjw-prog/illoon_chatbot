@@ -1,11 +1,13 @@
 import os
 import re
+import json
 import numpy as np
 import faiss
 import anthropic
+import requests
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
-from loader import load_all_jobs, load_quick_replies, load_trend_summaries, load_intent_examples
+from loader import load_all_jobs, load_quick_replies, load_trend_summaries, load_intent_examples, get_category_stats
 
 # ============================
 # 초기 설정
@@ -14,6 +16,7 @@ from loader import load_all_jobs, load_quick_replies, load_trend_summaries, load
 # .env 파일에서 토큰 불러오기
 load_dotenv()
 CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY")
+YOUTHCENTER_API_KEY = os.getenv("YOUTHCENTER_API_KEY")
 
 # Claude API 클라이언트 초기화
 client = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
@@ -43,6 +46,8 @@ trends = load_trend_summaries()
 # 퀵리플라이 데이터 로드
 quick_replies = load_quick_replies()
 
+# 카테고리별 통계 데이터 로드
+category_stats = get_category_stats()
 
 # ============================
 # 인덱스 구축 함수
@@ -204,8 +209,8 @@ def classify_intent_by_llm(query: str) -> str:
 - GENERAL: 일반적인 공고 검색 요청
 - TREND: IT 취업 시장 트렌드 관련 질문
 - COMPANY: 특정 기업 정보 질문
-- CAREER_TIP: 취업 준비 관련 질문 (자소서, 면접, 포트폴리오 등)
-- PUBLIC_DATA: 공공기관/공기업 채용 관련 질문
+- PUBLIC_DATA: 정부 지원 제도, 정책, 지원금, 청년내일채움공제, 국민취업지원제도 등 정부/공공기관 지원 관련 질문. "정책", "제도", "지원금", "지원사업" 키워드가 있으면 이걸로 분류
+- CAREER_TIP: 이력서, 자소서, 면접, 포트폴리오 등 취업 준비 방법 관련 질문
 - INVALID: 취업/채용과 무관한 질문
 
 반드시 카테고리 이름만 답하세요. 다른 텍스트는 절대 포함하지 마세요.
@@ -244,21 +249,120 @@ def classify_intent(query: str) -> str:
 
 
 # ============================
+# 개체명 추출 (NLU 3단계)
+# ============================
+
+def extract_entities(query: str, intent: str) -> dict:
+    """인텐트에 맞게 유저 질문에서 개체명 추출"""
+
+    prompt = f"""아래 질문에서 필요한 정보를 추출하세요.
+질문 유형: {intent}
+
+추출 규칙:
+- - CUSTOM/GENERAL/QUICK_REPLIES: 직무, 지역, 경력, 기술스택, 고용형태(재택/정규직/계약직 등), 연봉조건(높은순/낮은순), 마감조건(임박) 추출
+- TREND: 직무분야, 기술스택 추출
+- COMPANY: 회사명 추출
+- CAREER_TIP: 준비유형(자소서/면접/포트폴리오 등) 추출
+- PUBLIC_DATA: 정책유형(취업/창업), IT관련키워드(짧은 단어 1~2개, 예: "IT", "디지털", "개발자")
+없으면 null로 표시. 반드시 JSON 형식으로만 답하세요.
+
+질문: {query}
+
+예시 출력:
+{{"직무": "백엔드", "지역": null, "경력": "신입", "기술스택": "Python", "고용형태": "재택", "연봉조건": null, "마감조건": null}}"""
+
+    response = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=100,
+        messages=[{"role": "user", "content": prompt}]
+    )
+
+    try:
+        text = response.content[0].text.strip()
+        # ```json 백틱 제거
+        text = text.replace("```json", "").replace("```", "").strip()
+        result = json.loads(text)
+        return result
+    except:
+        print(f"개체명 추출 파싱 실패: {response.content[0].text.strip()}")
+        return {}
+
+
+# ============================
 # 검색 함수
 # ============================
 
-def search_jobs(query: str, user_info: dict = None, top_k: int = 3):
-    """벡터 유사도 기반으로 관련 공고 검색"""
+def search_jobs(query: str, user_info: dict = None, top_k: int = 3, entities: dict = {}):
+    """벡터 유사도 + 필터 기반으로 관련 공고 검색"""
 
-    # 유저 질문에서 원하는 공고 개수 추출 (예: "3개만", "1개", "5개 추천")
+    # 유저 질문에서 원하는 공고 개수 추출
     number_match = re.search(r'(\d+)\s*개', query)
     if number_match:
-        top_k = min(int(number_match.group(1)), 10)  # 최대 10개로 제한
+        top_k = min(int(number_match.group(1)), 10)
 
-    # 검색 쿼리 구성 - 질문 + 유저 정보 합치기
+    # ============================
+    # 1단계: 필터링 (조건 기반)
+    # ============================
+    filtered_jobs = jobs  # 전체 공고에서 시작
+
+    if entities:
+        # 직무 필터
+        if entities.get("직무"):
+            키워드 = entities["직무"]
+            filtered_jobs = [j for j in filtered_jobs if
+                            키워드 in j.get("category", "") or
+                            j.get("category", "") in 키워드 or
+                            키워드 in j.get("position", {}).get("title", "") or
+                            j.get("position", {}).get("job_category", {}).get("mid", "") in 키워드]
+
+        # 지역 필터
+        if entities.get("지역"):
+            filtered_jobs = [j for j in filtered_jobs if
+                            entities["지역"] in j.get("work_condition", {}).get("location", {}).get("sido", "") or
+                            entities["지역"] in j.get("work_condition", {}).get("location", {}).get("sigungu", "") or
+                            j.get("work_condition", {}).get("location", {}).get("sido", "") in entities["지역"] or
+                            j.get("work_condition", {}).get("location", {}).get("sigungu", "") in entities["지역"]]
+
+        # 경력 필터
+        if entities.get("경력"):
+            filtered_jobs = [j for j in filtered_jobs if entities["경력"] in j.get("position", {}).get("career", {}).get("type", "")]
+
+        # 고용형태 필터 (재택근무 등)
+        if entities.get("고용형태"):
+            filtered_jobs = [j for j in filtered_jobs if entities["고용형태"] in j.get("position", {}).get("work_type", "")]
+
+        # 연봉 정렬
+        if entities.get("연봉조건") == "높은순":
+            filtered_jobs = sorted(filtered_jobs, key=lambda x: x.get("work_condition", {}).get("salary", {}).get("max", 0), reverse=True)
+
+        # 마감 임박 정렬
+        if entities.get("마감조건") == "임박":
+            filtered_jobs = sorted(filtered_jobs, key=lambda x: x.get("deadline", "9999-12-31"))
+
+    # 필터 결과가 있으면 top_k개 반환
+    if filtered_jobs and entities and any([
+        entities.get("직무"), entities.get("지역"), entities.get("경력"),
+        entities.get("고용형태"), entities.get("연봉조건"), entities.get("마감조건")
+    ]):
+        print(f"필터 검색 결과: 총 {len(filtered_jobs)}개 → top {top_k}개 반환")
+        for job in filtered_jobs[:top_k]:
+            print(f"  - {job.get('company', {}).get('name', '')} | 연봉: {job.get('work_condition', {}).get('salary', {}).get('max', 0)//10000}만원")
+        return filtered_jobs[:top_k]
+
+    # ============================
+    # 2단계: 벡터 검색 (필터 조건 없을 때)
+    # ============================
     search_text = query
 
-    # 유저 정보가 있으면 검색 쿼리에 추가해서 맞춤 검색
+    if entities:
+        search_text += " " + " ".join([
+            entities.get("직무") or "",
+            entities.get("기술스택") or "",
+            entities.get("지역") or "",
+            entities.get("경력") or "",
+            entities.get("고용형태") or "",
+        ])
+
     if user_info:
         search_text += " " + " ".join([
             user_info.get("job_type") or "",
@@ -269,27 +373,40 @@ def search_jobs(query: str, user_info: dict = None, top_k: int = 3):
             user_info.get("career_years") or "",
         ])
 
-    # 쿼리를 벡터로 변환
     query_vector = embedding_model.encode([search_text])
     query_vector = np.array(query_vector).astype("float32")
 
-    # FAISS로 가장 유사한 공고 top_k개 검색
     distances, indices = faiss_index.search(query_vector, top_k)
 
-    # 검색된 인덱스로 실제 공고 데이터 반환
     results = []
     for idx in indices[0]:
         if idx < len(jobs):
             results.append(jobs[idx])
 
+    # 벡터 검색 결과를 인기도 기반으로 정렬 (조회수 + 지원수 + 스크랩수)
+    results.sort(key=lambda x: (
+        x.get("stats", {}).get("view_count", 0) +
+        x.get("stats", {}).get("apply_count", 0) +
+        x.get("stats", {}).get("bookmark_count", 0)
+    ), reverse=True)        
+
     return results
 
-
-def search_trends(query: str, top_k: int = 3):
+def search_trends(query: str, top_k: int = 3, entities: dict = {}):
     """벡터 유사도 기반으로 관련 트렌드 데이터 검색"""
 
+    # 검색 쿼리 구성 - 질문 + 개체명
+    search_text = query
+
+    # 개체명 있으면 검색 쿼리에 추가
+    if entities:
+        search_text += " " + " ".join([
+            entities.get("직무분야") or "",
+            entities.get("기술스택") or "",
+        ])
+
     # 쿼리를 벡터로 변환
-    query_vector = embedding_model.encode([query])
+    query_vector = embedding_model.encode([search_text])
     query_vector = np.array(query_vector).astype("float32")
 
     # FAISS로 가장 유사한 트렌드 top_k개 검색
@@ -325,11 +442,60 @@ def find_similar_quick_reply(query: str, threshold: float = 30.0):
 
 
 # ============================
+# 공공데이터 검색
+# ============================
+
+def search_youth_policies(query: str, entities: dict = {}):
+    """온통청년 청년정책API에서 일자리 관련 정책 검색"""
+
+    url = "https://www.youthcenter.go.kr/go/ythip/getPlcy"
+
+    # 개체명에서 IT 키워드 추출
+    it_keyword = entities.get("IT관련키워드") or ""
+    policy_type = entities.get("정책유형") or ""
+
+    # 검색 키워드 구성 (IT 키워드 우선, 없으면 정책유형 사용)
+    keyword = it_keyword or policy_type or ""
+
+    params = {
+        "apiKeyNm": YOUTHCENTER_API_KEY,
+        "lclsfNm": "일자리",
+        "pageSize": 3,
+        "rtnType": "json"
+    }
+
+    # 키워드 있으면 추가
+    if keyword:
+        params["plcyKywdNm"] = keyword
+
+    try:
+        response = requests.get(url, params=params)
+        data = response.json()
+
+        policies = []
+        for item in data.get("result", {}).get("youthPolicyList", []):
+            policies.append({
+                "name": item.get("plcyNm", ""),
+                "description": item.get("plcyExplnCn", ""),
+                "support": item.get("plcySprtCn", ""),
+                "keyword": item.get("plcyKywdNm", ""),
+                "period": item.get("aplyYmd", ""),
+                "url": item.get("aplyUrlAddr", "")
+            })
+
+        return policies
+
+    except Exception as e:
+        print(f"온통청년 API 호출 실패: {e}")
+        return []
+
+
+# ============================
 # 답변 생성
 # ============================
 
-def generate_answer(query: str, related_jobs: list, user_info: dict = None, history: list = [], related_trends: list = []):
-    """검색된 공고/트렌드와 유저 정보, 대화 히스토리를 바탕으로 LLM이 답변 생성"""
+def generate_answer(query: str, related_jobs: list, user_info: dict = None, history: list = [], related_trends: list = [], related_policies: list = [], intent: str = "", category_stats: dict = {}):
+    """검색된 공고/트렌드/정책과 유저 정보, 대화 히스토리를 바탕으로 LLM이 답변 생성"""
 
     # 검색된 공고 정보를 텍스트로 변환
     jobs_text = ""
@@ -361,6 +527,26 @@ def generate_answer(query: str, related_jobs: list, user_info: dict = None, hist
         trends_text += f"   연봉 트렌드: {trend.get('salary_trend', '')}\n"
         trends_text += f"   복지 트렌드: {trend.get('welfare_trend', '')}\n\n"
 
+    # 정책 데이터를 텍스트로 변환
+    policies_text = ""
+    for i, policy in enumerate(related_policies, 1):
+        policies_text += f"{i}. {policy.get('name', '')}\n"
+        policies_text += f"   설명: {policy.get('description', '')}\n"
+        policies_text += f"   지원내용: {policy.get('support', '')}\n"
+        policies_text += f"   신청기간: {policy.get('period', '')}\n"
+        policies_text += f"   신청URL: {policy.get('url', '')}\n\n"
+
+    # 카테고리별 통계 텍스트 변환 (TREND일 때만)
+    stats_text = ""
+    if intent == "TREND" and category_stats:
+        sorted_stats = sorted(category_stats.items(), key=lambda x: x[1]["apply_count"], reverse=True)
+        stats_text += "현재 플랫폼 채용 통계:\n"
+        for category, stat in sorted_stats:
+            stats_text += f"- {category}: 공고 {stat['count']}개, 지원수 {stat['apply_count']}명, 조회수 {stat['view_count']}회\n"
+
+    # 유저 맞춤 정보가 있으면 프롬프트에 반영
+    user_context = ""
+
     # 유저 맞춤 정보가 있으면 프롬프트에 반영
     user_context = ""
     if user_info:
@@ -383,7 +569,7 @@ def generate_answer(query: str, related_jobs: list, user_info: dict = None, hist
 """
 
     # 시스템 프롬프트
-    system_prompt = """당신은 일로온(일로ON) 취업 플랫폼의 AI 챗봇 어시스턴트입니다.
+    system_prompt = f"""당신은 일로온(일로ON) 취업 플랫폼의 AI 챗봇 어시스턴트입니다.
 반드시 한국어로만 답변하세요. 다른 언어는 절대 사용하지 마세요.
 사용자의 취업 관련 질문에 친절하고 전문적으로 답변해주세요.
 이전 대화 내용을 참고하여 문맥에 맞는 답변을 해주세요.
@@ -391,7 +577,8 @@ def generate_answer(query: str, related_jobs: list, user_info: dict = None, hist
 공고의 스킬 목록에 있는 기술명은 한국어와 영어가 같은 의미입니다. 사용자가 한국어로 기술명을 말해도 영어로 된 스킬 목록에서 찾아서 답변해주세요.
 공고 추천 시에는 핵심 정보를 간결하게 전달하고, 사용자가 추가로 궁금한 점을 물어볼 수 있도록 유도하세요.
 사용자가 물어본 것만 답변하고 묻지 않은 내용은 절대 추가하지 마세요.
-트렌드 데이터가 제공된 경우 해당 데이터만 바탕으로 답변하고 데이터에 없는 내용은 절대 추가하지 마세요."""
+트렌드 데이터가 제공된 경우 해당 데이터만 바탕으로 답변하고 데이터에 없는 내용은 절대 추가하지 마세요.
+현재 질문 유형은 {intent}입니다. 반드시 이 유형에 해당하는 데이터만 활용해서 답변하고, 관련 없는 데이터는 절대 언급하지 마세요."""
 
     # 메시지 구성 - 시스템 프롬프트 + 이전 대화 히스토리 + 현재 질문
     # Claude API는 system 파라미터 별도로 분리
@@ -405,11 +592,12 @@ def generate_answer(query: str, related_jobs: list, user_info: dict = None, hist
     current_message = f"""{user_context}
 사용자 질문: {query}
 
-아래는 일로온 플랫폼의 관련 공고 목록입니다:
-{jobs_text if jobs_text else "관련 공고를 찾지 못했습니다."}
-
+{f"아래는 일로온 플랫폼의 관련 공고 목록입니다:{chr(10)}{jobs_text}" if jobs_text else ""}
 {f"아래는 관련 트렌드 정보입니다:{chr(10)}{trends_text}" if trends_text else ""}
-위 공고 목록과 트렌드 정보를 바탕으로 사용자에게 도움이 되는 답변을 한국어로 해주세요."""
+{f"아래는 관련 청년 정책 정보입니다:{chr(10)}{policies_text}" if policies_text else ""}
+{f"아래는 플랫폼 채용 통계입니다:{chr(10)}{stats_text}" if stats_text else ""}
+
+위 제공된 정보를 바탕으로 사용자에게 도움이 되는 답변을 한국어로 해주세요."""
 
     user_messages.append({"role": "user", "content": current_message})
 

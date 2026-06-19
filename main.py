@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
-from rag import search_jobs, search_trends, generate_answer, classify_intent
+from rag import search_jobs, search_trends, search_youth_policies, generate_answer, classify_intent, extract_entities, category_stats
 from loader import get_user_info, load_quick_replies
 
 # ============================
@@ -12,7 +12,7 @@ from loader import get_user_info, load_quick_replies
 # FastAPI 앱 생성
 app = FastAPI()
 
-# CORS 설정 - 프론트엔드에서 이 서버로 요청 보낼 수 있게 허용
+# CORS 설정 - Spring 백엔드 서버에서 이 서버로 요청 보낼 수 있게 허용
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -32,12 +32,12 @@ class ChatMessage(BaseModel):
 
 # 유저 요청 데이터 형식 정의
 class ChatRequest(BaseModel):
-    message: str                                # 유저가 보낸 메시지
-    user_id: Optional[str] = None               # 유저 ID
-    user_info: Optional[dict] = None            # 직접 유저 정보 넘길 때 (선택사항)
-    is_quick_replies: Optional[bool] = False
-    quick_replies_category: Optional[str] = None
-    history: Optional[List[ChatMessage]] = []   # 이전 대화 히스토리
+    message: str                                  # 유저가 보낸 메시지
+    user_id: Optional[str] = None                 # 유저 ID
+    user_info: Optional[dict] = None              # 직접 유저 정보 넘길 때 (선택사항)
+    is_quick_replies: Optional[bool] = False      # 퀵리플라이 버튼 클릭 여부
+    quick_replies_category: Optional[str] = None  # 퀵리플라이 카테고리
+    history: Optional[List[ChatMessage]] = []     # 이전 대화 히스토리
 
 
 # ============================
@@ -101,20 +101,28 @@ def chat(request: ChatRequest):
     if request.is_quick_replies:
         print(f"퀵리플라이 처리: {query} (카테고리: {request.quick_replies_category})")
 
+        # 퀵리플라이 개체명 추출
+        entities = extract_entities(query, "QUICK_REPLIES")
+        print(f"추출된 개체명: {entities}")
+
+        # 나의 검색 → 유저 정보 반영
         if request.quick_replies_category == "나의 검색":
-            related_jobs = search_jobs(query, user_info=user_info)
+            related_jobs = search_jobs(query, user_info=user_info, entities=entities)
             quick_replies_user_info = user_info
+        # 공고/채용정보 → 유저 정보 없이
         else:
-            related_jobs = search_jobs(query, user_info=None)
+            related_jobs = search_jobs(query, user_info=None, entities=entities)
             quick_replies_user_info = None
 
-        related_trends = search_trends(query)
+        related_trends = search_trends(query, entities=entities)
         answer = generate_answer(
             query=query,
             related_jobs=related_jobs,
             user_info=quick_replies_user_info,
             history=history,
-            related_trends=related_trends
+            related_trends=related_trends,
+            related_policies=[],
+            intent="QUICK_REPLIES"
         )
         return {
             "answer": answer,
@@ -130,6 +138,10 @@ def chat(request: ChatRequest):
     # ============================
     intent = classify_intent(query)
     print(f"최종 Intent: {intent}")
+
+    # 개체명 추출 (인텐트에 맞게)
+    entities = extract_entities(query, intent)
+    print(f"추출된 개체명: {entities}")
 
     # INVALID → 취업 무관 질문 차단
     if intent == "INVALID":
@@ -147,12 +159,24 @@ def chat(request: ChatRequest):
             "intent": intent
         }
 
-    # PUBLIC_DATA → 공공데이터 준비 중 안내
+    # PUBLIC_DATA → 온통청년 청년정책 데이터로 답변
     if intent == "PUBLIC_DATA":
+        policies = search_youth_policies(query, entities=entities)
+        answer = generate_answer(
+            query=query,
+            related_jobs=[],
+            user_info=None,
+            history=history,
+            related_trends=[],
+            related_policies=policies,
+            intent=intent
+        )
         return {
-            "answer": "공공기관 채용 정보는 현재 준비 중입니다 😊",
+            "answer": answer,
             "sources": [],
-            "intent": intent
+            "intent": intent,
+            "user_message": {"role": "user", "content": query},
+            "assistant_message": {"role": "assistant", "content": answer}
         }
 
     # CAREER_TIP → Claude 자체 지식으로 답변 (공고/트렌드 데이터 없이)
@@ -162,7 +186,9 @@ def chat(request: ChatRequest):
             related_jobs=[],
             user_info=None,
             history=history,
-            related_trends=[]
+            related_trends=[],
+            related_policies=[],
+            intent=intent
         )
         return {
             "answer": answer,
@@ -174,13 +200,16 @@ def chat(request: ChatRequest):
 
     # TREND → 트렌드 데이터로 답변
     if intent == "TREND":
-        related_trends = search_trends(query)
+        related_trends = search_trends(query, entities=entities)
         answer = generate_answer(
             query=query,
             related_jobs=[],
             user_info=None,
             history=history,
-            related_trends=related_trends
+            related_trends=related_trends,
+            related_policies=[],
+            intent=intent,
+            category_stats=category_stats
         )
         return {
             "answer": answer,
@@ -192,13 +221,22 @@ def chat(request: ChatRequest):
 
     # CUSTOM → 설문 데이터 + 공고 데이터로 맞춤 답변
     if intent == "CUSTOM":
-        related_jobs = search_jobs(query, user_info=user_info)
+         # user_info 정보를 entities에 병합 (entities에 없는 값만)
+        if user_info:
+            entities["직무"] = entities.get("직무") or user_info.get("job_type")
+            entities["지역"] = entities.get("지역") or user_info.get("region")
+            entities["경력"] = entities.get("경력") or user_info.get("career_type")
+       
+        print(f"병합 후 entities: {entities}")  # 추가
+        related_jobs = search_jobs(query, user_info=user_info, entities=entities)
         answer = generate_answer(
             query=query,
             related_jobs=related_jobs,
             user_info=user_info,
             history=history,
-            related_trends=[]
+            related_trends=[],
+            related_policies=[],
+            intent=intent
         )
         return {
             "answer": answer,
@@ -209,13 +247,15 @@ def chat(request: ChatRequest):
         }
 
     # GENERAL → 공고 데이터로 일반 답변 (설문 데이터 X)
-    related_jobs = search_jobs(query, user_info=None)
+    related_jobs = search_jobs(query, user_info=None, entities=entities)
     answer = generate_answer(
         query=query,
         related_jobs=related_jobs,
         user_info=None,
         history=history,
-        related_trends=[]
+        related_trends=[],
+        related_policies=[],
+        intent=intent
     )
     return {
         "answer": answer,
