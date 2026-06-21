@@ -63,7 +63,7 @@
     },
     {
       "intent": "PUBLIC_DATA",
-      "description": "청년 지원 제도 및 정책 관련 질문 (온통청년 청년정책API)",
+      "description": "청년 지원 제도 및 정책 관련 질문 (온통청년 청년정책API 활용)",
       "examples": [
         "청년 취업 지원 정책 알려줘",
         "취업 준비생 지원 제도 뭐 있어?",
