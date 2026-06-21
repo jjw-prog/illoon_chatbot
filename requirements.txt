@@ -1,7 +1,8 @@
 fastapi
 uvicorn
-sentence-transformers
+voyageai
 faiss-cpu
 python-dotenv
 numpy
 anthropic
+requests

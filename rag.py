@@ -6,7 +6,7 @@ import faiss
 import anthropic
 import requests
 from dotenv import load_dotenv
-from sentence_transformers import SentenceTransformer
+import voyageai
 from loader import load_all_jobs, load_quick_replies, load_trend_summaries, load_intent_examples, get_category_stats
 
 # ============================
@@ -17,15 +17,31 @@ from loader import load_all_jobs, load_quick_replies, load_trend_summaries, load
 load_dotenv()
 CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY")
 YOUTHCENTER_API_KEY = os.getenv("YOUTHCENTER_API_KEY")
+VOYAGE_API_KEY = os.getenv("VOYAGE_API_KEY")
 
 # Claude API 클라이언트 초기화
 client = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
 
-# 한국어 지원 임베딩 모델 로드 (벡터 변환용)
-# 성능 가장 좋은 한국어 포함 다국어 지원 임베딩 모델 사용
-print("임베딩 모델 로딩 중...")
-embedding_model = SentenceTransformer("intfloat/multilingual-e5-large")
-print("임베딩 모델 로딩 완료!")
+# Voyage AI 임베딩 클라이언트 초기화 (API 기반, 서버 RAM 점유 없음)
+print("Voyage AI 클라이언트 초기화 중...")
+vo = voyageai.Client(api_key=VOYAGE_API_KEY)
+print("Voyage AI 클라이언트 초기화 완료!")
+
+
+# ============================
+# 임베딩 헬퍼 함수
+# ============================
+
+def embed_documents(texts: list) -> np.ndarray:
+    """문서 텍스트를 벡터로 변환 (인덱스 구축용)"""
+    result = vo.embed(texts, model="voyage-4", input_type="document")
+    return np.array(result.embeddings).astype("float32")
+
+
+def embed_query(query: str) -> np.ndarray:
+    """검색 쿼리를 벡터로 변환"""
+    result = vo.embed([query], model="voyage-4", input_type="query")
+    return np.array(result.embeddings).astype("float32")
 
 
 # ============================
@@ -67,8 +83,7 @@ def build_intent_index(intent_examples: list):
             example_labels.append(intent)  # 예시 질문과 카테고리 매핑
 
     # 예시 질문들을 벡터로 변환
-    embeddings = embedding_model.encode(all_examples)
-    embeddings = np.array(embeddings).astype("float32")
+    embeddings = embed_documents(all_examples)
 
     # FAISS 인덱스 생성
     dimension = embeddings.shape[1]
@@ -83,8 +98,7 @@ def build_quick_replies_index(quick_replies: list):
     quick_reply_texts = [quick_reply.get("question", "") for quick_reply in quick_replies]
 
     # 퀵리플라이 질문들을 벡터로 변환
-    embeddings = embedding_model.encode(quick_reply_texts)
-    embeddings = np.array(embeddings).astype("float32")
+    embeddings = embed_documents(quick_reply_texts)
 
     # FAISS 인덱스 생성
     dimension = embeddings.shape[1]
@@ -115,8 +129,7 @@ def build_index(jobs: list):
         texts.append(text)
 
     # 텍스트를 벡터로 변환
-    embeddings = embedding_model.encode(texts, show_progress_bar=True)
-    embeddings = np.array(embeddings).astype("float32")
+    embeddings = embed_documents(texts)
 
     # FAISS 인덱스 생성 및 벡터 추가
     dimension = embeddings.shape[1]
@@ -141,8 +154,7 @@ def build_trend_index(trends: list):
         trend_texts.append(text)
 
     # 텍스트를 벡터로 변환
-    embeddings = embedding_model.encode(trend_texts)
-    embeddings = np.array(embeddings).astype("float32")
+    embeddings = embed_documents(trend_texts)
 
     # FAISS 인덱스 생성 및 벡터 추가
     dimension = embeddings.shape[1]
@@ -181,8 +193,7 @@ def classify_intent_by_vector(query: str, threshold: float = 0.2):
     """1차: 벡터 유사도로 Intent 분류"""
 
     # 쿼리를 벡터로 변환
-    query_vector = embedding_model.encode([query])
-    query_vector = np.array(query_vector).astype("float32")
+    query_vector = embed_query(query)
 
     # 가장 유사한 예시 질문 검색
     distances, indices = intent_index.search(query_vector, 1)
@@ -252,6 +263,52 @@ def classify_intent(query: str) -> str:
 # 개체명 추출 (NLU 3단계)
 # ============================
 
+def normalize_job_type(job_type: str) -> str:
+    """user_info.job_type(자유형식)을 표준 카테고리로 정규화
+    예: "백엔드 개발" → "백엔드/서버", "데이터 엔지니어" → "데이터"
+    토큰 분리 시 "개발", "엔지니어" 같은 범용 단어가 너무 넓게 매칭되는 문제 방지
+    """
+    if not job_type:
+        return None
+
+    # 표준 카테고리 매핑 테이블 (키워드가 job_type에 포함되면 해당 카테고리로 정규화)
+    매핑 = {
+        "백엔드": "백엔드/서버",
+        "서버": "백엔드/서버",
+        "프론트엔드": "프론트엔드",
+        "프론트": "프론트엔드",
+        "AI": "AI/ML",
+        "ML": "AI/ML",
+        "머신러닝": "AI/ML",
+        "딥러닝": "AI/ML",
+        "데이터": "데이터",
+        "DevOps": "인프라/DevOps",
+        "인프라": "인프라/DevOps",
+        "클라우드": "인프라/DevOps",
+        "iOS": "모바일",
+        "Android": "모바일",
+        "모바일": "모바일",
+        "Flutter": "모바일",
+        "Swift": "모바일",
+        "Kotlin": "모바일",
+        "게임": "게임",
+        "Unity": "게임",
+        "Unreal": "게임",
+        "보안": "보안",
+        "QA": "QA/테스트",
+        "테스트": "QA/테스트",
+        "PM": "기획/PM",
+        "기획": "기획/PM",
+        "프로덕트": "기획/PM",
+    }
+
+    for keyword, category in 매핑.items():
+        if keyword in job_type:
+            return category
+
+    return job_type  # 매핑 없으면 원본 반환
+
+
 def extract_entities(query: str, intent: str) -> dict:
     """인텐트에 맞게 유저 질문에서 개체명 추출"""
 
@@ -259,17 +316,21 @@ def extract_entities(query: str, intent: str) -> dict:
 질문 유형: {intent}
 
 추출 규칙:
-- - CUSTOM/GENERAL/QUICK_REPLIES: 직무, 지역, 경력, 기술스택, 고용형태(재택/정규직/계약직 등), 연봉조건(높은순/낮은순), 마감조건(임박) 추출
+- CUSTOM/GENERAL/QUICK_REPLIES: 직무, 지역, 경력, 기술스택, 고용형태(재택/정규직/계약직 등), 연봉조건(높은순/낮은순), 마감조건(임박) 추출
 - TREND: 직무분야, 기술스택 추출
 - COMPANY: 회사명 추출
 - CAREER_TIP: 준비유형(자소서/면접/포트폴리오 등) 추출
-- PUBLIC_DATA: 정책유형(취업/창업), IT관련키워드(짧은 단어 1~2개, 예: "IT", "디지털", "개발자")
+- PUBLIC_DATA: 정책유형(취업/창업/null), 세부키워드(구체적인 지원 종류, 예: "면접비", "교육비", "인턴", "창업자금". 포괄적인 단어는 null), 지역(질문에서 언급된 지역명. 없으면 null)
 없으면 null로 표시. 반드시 JSON 형식으로만 답하세요.
+
+직무 추출 시 반드시 아래 표준 카테고리 중 하나로만 답하세요:
+백엔드/서버, 프론트엔드, AI/ML, 데이터, 인프라/DevOps, 모바일, 게임, 보안, QA/테스트, 기획/PM
+(예: "iOS 개발" → "모바일", "머신러닝" → "AI/ML", "백엔드 개발" → "백엔드/서버")
 
 질문: {query}
 
 예시 출력:
-{{"직무": "백엔드", "지역": null, "경력": "신입", "기술스택": "Python", "고용형태": "재택", "연봉조건": null, "마감조건": null}}"""
+{{"직무": "백엔드/서버", "지역": null, "경력": "신입", "기술스택": "Python", "고용형태": "재택", "연봉조건": null, "마감조건": null}}"""
 
     response = client.messages.create(
         model="claude-haiku-4-5-20251001",
@@ -306,13 +367,17 @@ def search_jobs(query: str, user_info: dict = None, top_k: int = 3, entities: di
     filtered_jobs = jobs  # 전체 공고에서 시작
 
     if entities:
-        # 직무 필터
+        # 직무 필터 (토큰 기반 부분 매칭으로 일반화)
+        # LLM이 표준 카테고리로 뽑아주지만, user_info.job_type 같은 자유형식도 처리
+        # 예: "백엔드 개발" → ["백엔드", "개발"] → "백엔드" in "백엔드/서버" → True
         if entities.get("직무"):
             키워드 = entities["직무"]
+            키워드_토큰 = 키워드.replace("/", " ").split()
             filtered_jobs = [j for j in filtered_jobs if
                             키워드 in j.get("category", "") or
                             j.get("category", "") in 키워드 or
-                            키워드 in j.get("position", {}).get("title", "") or
+                            any(t in j.get("category", "") for t in 키워드_토큰) or
+                            any(t in j.get("position", {}).get("title", "") for t in 키워드_토큰) or
                             j.get("position", {}).get("job_category", {}).get("mid", "") in 키워드]
 
         # 지역 필터
@@ -373,8 +438,7 @@ def search_jobs(query: str, user_info: dict = None, top_k: int = 3, entities: di
             user_info.get("career_years") or "",
         ])
 
-    query_vector = embedding_model.encode([search_text])
-    query_vector = np.array(query_vector).astype("float32")
+    query_vector = embed_query(search_text)
 
     distances, indices = faiss_index.search(query_vector, top_k)
 
@@ -406,8 +470,7 @@ def search_trends(query: str, top_k: int = 3, entities: dict = {}):
         ])
 
     # 쿼리를 벡터로 변환
-    query_vector = embedding_model.encode([search_text])
-    query_vector = np.array(query_vector).astype("float32")
+    query_vector = embed_query(search_text)
 
     # FAISS로 가장 유사한 트렌드 top_k개 검색
     distances, indices = trend_index.search(query_vector, top_k)
@@ -425,8 +488,7 @@ def find_similar_quick_reply(query: str, threshold: float = 30.0):
     """유저 질문과 가장 유사한 퀵리플라이 케이스 찾기"""
 
     # 쿼리를 벡터로 변환
-    query_vector = embedding_model.encode([query])
-    query_vector = np.array(query_vector).astype("float32")
+    query_vector = embed_query(query)
 
     # 가장 유사한 퀵리플라이 검색
     distances, indices = quick_replies_index.search(query_vector, 1)
@@ -445,42 +507,100 @@ def find_similar_quick_reply(query: str, threshold: float = 30.0):
 # 공공데이터 검색
 # ============================
 
-def search_youth_policies(query: str, entities: dict = {}):
-    """온통청년 청년정책API에서 일자리 관련 정책 검색"""
-
+def search_youth_policies(query: str, entities: dict = {}, user_info: dict = None):
+    """온통청년 청년정책API에서 취업/창업 관련 정책 검색
+    지역/키워드 기준 간단 랭킹 → 상위 5개 반환
+    """
     url = "https://www.youthcenter.go.kr/go/ythip/getPlcy"
 
-    # 개체명에서 IT 키워드 추출
-    it_keyword = entities.get("IT관련키워드") or ""
+    # 엔터티에서 추출
     policy_type = entities.get("정책유형") or ""
+    세부키워드 = entities.get("세부키워드") or ""
+    지역 = entities.get("지역") or entities.get("거주지역") or ""
+    keywords = [k.strip() for k in 세부키워드.split(",") if k.strip()] if 세부키워드 else []
 
-    # 검색 키워드 구성 (IT 키워드 우선, 없으면 정책유형 사용)
-    keyword = it_keyword or policy_type or ""
+    print(f"[PUBLIC_DATA] 정책유형: {policy_type}, 지역: {지역}, 키워드: {keywords}")
 
+    # 1단계: 전체 개수 파악
+    params_count = {
+        "apiKeyNm": YOUTHCENTER_API_KEY,
+        "lclsfNm": "일자리",
+        "pageSize": 1,
+        "rtnType": "json"
+    }
+    if policy_type in ["취업", "창업"]:
+        params_count["mclsfNm"] = policy_type
+
+    try:
+        count_response = requests.get(url, params=params_count)
+        total_count = count_response.json().get("result", {}).get("pagging", {}).get("totCount", 100)
+        print(f"API 전체 정책 수: {total_count}개")
+    except:
+        total_count = 100
+
+    # 2단계: 전체 가져오기
     params = {
         "apiKeyNm": YOUTHCENTER_API_KEY,
         "lclsfNm": "일자리",
-        "pageSize": 3,
+        "pageSize": total_count,
         "rtnType": "json"
     }
-
-    # 키워드 있으면 추가
-    if keyword:
-        params["plcyKywdNm"] = keyword
+    if policy_type in ["취업", "창업"]:
+        params["mclsfNm"] = policy_type
 
     try:
         response = requests.get(url, params=params)
         data = response.json()
+        raw_items = data.get("result", {}).get("youthPolicyList", [])
+
+        # 마감(0057003) 제외
+        items = [i for i in raw_items if i.get("aplyPrdSeCd") != "0057003"]
+        print(f"전체 {len(raw_items)}개 중 마감 제외 후: {len(items)}개")
+
+        if not items:
+            print("온통청년 API 결과 없음")
+            return []
+
+        # 3단계: 간단 점수 계산
+        def calc_score(item):
+            score = 0
+            plcy_nm = item.get("plcyNm", "")
+            plcy_expln = item.get("plcyExplnCn", "")
+            plcy_sprt = item.get("plcySprtCn", "")
+            plcy_kwyd = item.get("plcyKywdNm", "")
+            pvsn = item.get("pvsnInstGroupCd", "")
+            aply_prd = item.get("aplyPrdSeCd", "")
+
+            if 지역 and (지역 in plcy_nm or 지역 in plcy_expln or 지역 in plcy_sprt or 지역 in plcy_kwyd):
+                score += 5
+            #전국
+            if pvsn == "0054001":
+                score += 3
+            #상시
+            if aply_prd == "0057002":
+                score += 5
+
+            for kw in keywords:
+                if kw in plcy_nm or kw in plcy_expln or kw in plcy_sprt or kw in plcy_kwyd:
+                    score += 3
+                    break
+
+            return score
+        
+        # 4단계: 점수 정렬 → 상위 5개
+        scored = sorted(items, key=calc_score, reverse=True)
+        top5 = scored[:5]
+        print(f"상위 5개: {[i.get('plcyNm','') for i in top5]}")
 
         policies = []
-        for item in data.get("result", {}).get("youthPolicyList", []):
+        for item in top5:
             policies.append({
                 "name": item.get("plcyNm", ""),
                 "description": item.get("plcyExplnCn", ""),
                 "support": item.get("plcySprtCn", ""),
                 "keyword": item.get("plcyKywdNm", ""),
                 "period": item.get("aplyYmd", ""),
-                "url": item.get("aplyUrlAddr", "")
+                "url": item.get("aplyUrlAddr", ""),
             })
 
         return policies
@@ -550,10 +670,6 @@ def generate_answer(query: str, related_jobs: list, user_info: dict = None, hist
     # 유저 맞춤 정보가 있으면 프롬프트에 반영
     user_context = ""
     if user_info:
-        # 재직 여부 텍스트 처리
-        is_employed = user_info.get("재직중")
-        employed_text = "재직 중" if is_employed else "미재직"
-
         user_context = f"""
 사용자 정보:
 - 희망 직무: {user_info.get('job_type', '미설정')}
@@ -565,7 +681,6 @@ def generate_answer(query: str, related_jobs: list, user_info: dict = None, hist
 - 전공: {user_info.get('major', '미설정')}
 - 경력 연수: {user_info.get('career_years', '미설정')}
 - 재직 중인 회사: {user_info.get('company_name', '미설정')}
-- 재직 여부: {employed_text}
 """
 
     # 시스템 프롬프트
@@ -578,7 +693,8 @@ def generate_answer(query: str, related_jobs: list, user_info: dict = None, hist
 공고 추천 시에는 핵심 정보를 간결하게 전달하고, 사용자가 추가로 궁금한 점을 물어볼 수 있도록 유도하세요.
 사용자가 물어본 것만 답변하고 묻지 않은 내용은 절대 추가하지 마세요.
 트렌드 데이터가 제공된 경우 해당 데이터만 바탕으로 답변하고 데이터에 없는 내용은 절대 추가하지 마세요.
-현재 질문 유형은 {intent}입니다. 반드시 이 유형에 해당하는 데이터만 활용해서 답변하고, 관련 없는 데이터는 절대 언급하지 마세요."""
+현재 질문 유형은 {intent}입니다. 반드시 이 유형에 해당하는 데이터만 활용해서 답변하고, 관련 없는 데이터는 절대 언급하지 마세요.
+정책별 핵심 내용을 간략하게 요약하고 신청 URL이 있으면 안내해주세요."""
 
     # 메시지 구성 - 시스템 프롬프트 + 이전 대화 히스토리 + 현재 질문
     # Claude API는 system 파라미터 별도로 분리
@@ -597,7 +713,8 @@ def generate_answer(query: str, related_jobs: list, user_info: dict = None, hist
 {f"아래는 관련 청년 정책 정보입니다:{chr(10)}{policies_text}" if policies_text else ""}
 {f"아래는 플랫폼 채용 통계입니다:{chr(10)}{stats_text}" if stats_text else ""}
 
-위 제공된 정보를 바탕으로 사용자에게 도움이 되는 답변을 한국어로 해주세요."""
+위 제공된 정보를 바탕으로 사용자에게 도움이 되는 답변을 한국어로 해주세요.
+{"\n\n더 알고 싶은 정책이 있으시면 말씀해주세요! 😊" if intent == "PUBLIC_DATA" else ""}"""
 
     user_messages.append({"role": "user", "content": current_message})
 

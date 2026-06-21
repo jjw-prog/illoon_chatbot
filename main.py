@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
-from rag import search_jobs, search_trends, search_youth_policies, generate_answer, classify_intent, extract_entities, category_stats
+from rag import search_jobs, search_trends, search_youth_policies, generate_answer, classify_intent, extract_entities, category_stats, normalize_job_type
 from loader import get_user_info, load_quick_replies
 
 # ============================
@@ -161,7 +161,7 @@ def chat(request: ChatRequest):
 
     # PUBLIC_DATA → 온통청년 청년정책 데이터로 답변
     if intent == "PUBLIC_DATA":
-        policies = search_youth_policies(query, entities=entities)
+        policies = search_youth_policies(query, entities=entities, user_info=user_info)
         answer = generate_answer(
             query=query,
             related_jobs=[],
