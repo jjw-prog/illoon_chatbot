@@ -535,7 +535,8 @@ def search_youth_policies(query: str, entities: dict = {}, user_info: dict = Non
         count_response = requests.get(url, params=params_count)
         total_count = count_response.json().get("result", {}).get("pagging", {}).get("totCount", 100)
         print(f"API 전체 정책 수: {total_count}개")
-    except:
+    except Exception as e:
+        print(f"정책 개수 조회 실패: {e}")
         total_count = 100
 
     # 2단계: 전체 가져오기
@@ -560,10 +561,42 @@ def search_youth_policies(query: str, entities: dict = {}, user_info: dict = Non
         if not items:
             print("온통청년 API 결과 없음")
             return []
+                
+        # 특정 정책명 질문 매칭
+       # 특정 정책명 질문 매칭
+        def find_policy_by_name(items, query):
+            for item in items:
+                policy_name = item.get("plcyNm", "")
 
+                # 사용자가 정책명을 그대로 질문에 포함한 경우만 상세 검색으로 처리
+                if policy_name and policy_name in query:
+                    return item
+
+            return None
+
+
+        matched_policy = find_policy_by_name(items, query)
+
+        if matched_policy:
+            matched_policy["_score"] = 999
+            matched_policy["_reasons"] = ["사용자가 특정 정책명을 질문한 것으로 판단됨"]
+
+            return [{
+                "name": matched_policy.get("plcyNm", ""),
+                "description": matched_policy.get("plcyExplnCn", ""),
+                "support": matched_policy.get("plcySprtCn", ""),
+                "keyword": matched_policy.get("plcyKywdNm", ""),
+                "period": matched_policy.get("aplyYmd", ""),
+                "url": matched_policy.get("aplyUrlAddr", ""),
+                "score": matched_policy.get("_score", 999),
+                "reasons": matched_policy.get("_reasons", [])
+            }]
+        
         # 3단계: 간단 점수 계산
         def calc_score(item):
             score = 0
+            reasons = []
+
             plcy_nm = item.get("plcyNm", "")
             plcy_expln = item.get("plcyExplnCn", "")
             plcy_sprt = item.get("plcySprtCn", "")
@@ -573,25 +606,41 @@ def search_youth_policies(query: str, entities: dict = {}, user_info: dict = Non
 
             if 지역 and (지역 in plcy_nm or 지역 in plcy_expln or 지역 in plcy_sprt or 지역 in plcy_kwyd):
                 score += 5
-            #전국
+                reasons.append(f"{지역} 지역과 관련된 정책")
+
             if pvsn == "0054001":
                 score += 3
-            #상시
+                reasons.append("전국 단위 신청 가능")
+
             if aply_prd == "0057002":
                 score += 5
+                reasons.append("상시 신청 가능")
 
             for kw in keywords:
                 if kw in plcy_nm or kw in plcy_expln or kw in plcy_sprt or kw in plcy_kwyd:
                     score += 3
+                    reasons.append(f"'{kw}' 키워드와 관련")
                     break
 
-            return score
+            if not reasons:
+                reasons.append("일자리 분야 정책 중 관련도가 높은 정책")
+
+            return score, reasons
         
         # 4단계: 점수 정렬 → 상위 5개
-        scored = sorted(items, key=calc_score, reverse=True)
-        top5 = scored[:5]
-        print(f"상위 5개: {[i.get('plcyNm','') for i in top5]}")
+        scored = []
 
+        for item in items:
+            score, reasons = calc_score(item)
+            item["_score"] = score
+            item["_reasons"] = reasons
+            scored.append(item)
+
+        scored.sort(key=lambda x: x.get("_score", 0), reverse=True)
+        top5 = scored[:5]
+
+        print(f"상위 5개: {[(i.get('plcyNm',''), i.get('_score', 0), i.get('_reasons', [])) for i in top5]}")
+        
         policies = []
         for item in top5:
             policies.append({
@@ -601,6 +650,8 @@ def search_youth_policies(query: str, entities: dict = {}, user_info: dict = Non
                 "keyword": item.get("plcyKywdNm", ""),
                 "period": item.get("aplyYmd", ""),
                 "url": item.get("aplyUrlAddr", ""),
+                "score": item.get("_score", 0),
+                "reasons": item.get("_reasons", [])
             })
 
         return policies
@@ -650,7 +701,11 @@ def generate_answer(query: str, related_jobs: list, user_info: dict = None, hist
     # 정책 데이터를 텍스트로 변환
     policies_text = ""
     for i, policy in enumerate(related_policies, 1):
+        reasons = policy.get("reasons", [])
+        reason_text = ", ".join(reasons) if reasons else "관련 정책으로 판단됨"
+
         policies_text += f"{i}. {policy.get('name', '')}\n"
+        policies_text += f"   추천근거: {reason_text}\n"
         policies_text += f"   설명: {policy.get('description', '')}\n"
         policies_text += f"   지원내용: {policy.get('support', '')}\n"
         policies_text += f"   신청기간: {policy.get('period', '')}\n"
@@ -694,7 +749,8 @@ def generate_answer(query: str, related_jobs: list, user_info: dict = None, hist
 사용자가 물어본 것만 답변하고 묻지 않은 내용은 절대 추가하지 마세요.
 트렌드 데이터가 제공된 경우 해당 데이터만 바탕으로 답변하고 데이터에 없는 내용은 절대 추가하지 마세요.
 현재 질문 유형은 {intent}입니다. 반드시 이 유형에 해당하는 데이터만 활용해서 답변하고, 관련 없는 데이터는 절대 언급하지 마세요.
-정책별 핵심 내용을 간략하게 요약하고 신청 URL이 있으면 안내해주세요."""
+정책별 핵심 내용을 간략하게 요약하고 신청 URL이 있으면 안내해주세요.
+PUBLIC_DATA 답변에서는 반드시 제공된 추천근거를 바탕으로 왜 추천했는지 함께 설명하세요."""
 
     # 메시지 구성 - 시스템 프롬프트 + 이전 대화 히스토리 + 현재 질문
     # Claude API는 system 파라미터 별도로 분리
