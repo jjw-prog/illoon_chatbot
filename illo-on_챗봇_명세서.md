@@ -37,7 +37,7 @@ AI 챗봇 메인 응답 API
 
 ```json
 {
-  "message": "부산 취업 정책 알려줘",
+  "message": "백엔드 개발자 공고 추천해줘",
   "user_id": "27379f57-57c5-45f3-8d62-f431d2f7ccb0",
   "user_info": null,
   "is_quick_replies": false,
@@ -78,16 +78,16 @@ AI 챗봇 메인 응답 API
 
 ```json
 {
-  "answer": "부산 지역에서 신청 가능한 취업 정책을 안내해드릴게요.",
+  "answer": "AI 응답 내용",
   "sources": [],
-  "intent": "PUBLIC_DATA",
+  "intent": "GENERAL",
   "user_message": {
     "role": "user",
-    "content": "부산 취업 정책 알려줘"
+    "content": "사용자 질문"
   },
   "assistant_message": {
     "role": "assistant",
-    "content": "부산 지역에서 신청 가능한 취업 정책을 안내해드릴게요."
+    "content": "AI 응답 내용"
   }
 }
 ```
