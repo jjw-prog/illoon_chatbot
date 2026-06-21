@@ -776,10 +776,15 @@ PUBLIC_DATA 답변에서는 반드시 제공된 추천근거를 바탕으로 왜
 
     # Claude API 호출해서 답변 생성
     response = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=1024,
-        system=system_prompt,
-        messages=user_messages
+    model="claude-haiku-4-5-20251001",
+    max_tokens=1024,
+    system=system_prompt,
+    messages=user_messages
     )
 
-    return response.content[0].text
+    answer = response.content[0].text
+
+    if intent == "PUBLIC_DATA":
+        answer += "\n\n📌 보다 많은 정보와 자세한 내용은 온통청년 홈페이지를 참고해주세요."
+
+    return answer
