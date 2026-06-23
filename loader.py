@@ -12,6 +12,8 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 SURVEY_FILE = os.path.join(DATA_DIR, "dummy_surveys.json")
 QUICK_REPLIES_FILE = os.path.join(DATA_DIR, "quick_replies.json")
 INTENT_EXAMPLES_FILE = os.path.join(DATA_DIR, "intent_examples.json")
+BUSAN_YOUTH_POLICY_FILE = os.path.join(DATA_DIR, "부산광역시_청년지원정책 현황.csv")
+BUSAN_JOB_SERVICE_FILE = os.path.join(DATA_DIR, "청년일자리지원 서비스.csv")
 
 # 공고 데이터 로드 시 제외할 파일 목록
 # 새로운 비공고 데이터 파일 추가 시 여기에 파일명 추가하면 됨
@@ -166,3 +168,54 @@ def get_category_stats():
         stats[category]["bookmark_count"] += job.get("stats", {}).get("bookmark_count", 0)
 
     return stats
+
+# ============================
+# 부산 공공데이터 CSV
+# ============================
+
+def load_csv_records(file_path: str):
+    """CSV 파일을 읽어서 dict 리스트로 반환"""
+    import csv
+
+    if not os.path.exists(file_path):
+        print(f"[WARN] CSV 파일을 찾을 수 없습니다: {file_path}")
+        return []
+
+    encodings = ["utf-8-sig", "utf-8", "cp949", "euc-kr"]
+
+    for encoding in encodings:
+        try:
+            with open(file_path, "r", encoding=encoding, newline="") as f:
+                reader = csv.DictReader(f)
+                records = []
+
+                for row in reader:
+                    cleaned_row = {}
+                    for key, value in row.items():
+                        if key is None:
+                            continue
+
+                        clean_key = key.strip()
+                        clean_value = value.strip() if isinstance(value, str) else value
+                        cleaned_row[clean_key] = clean_value or ""
+
+                    records.append(cleaned_row)
+
+                print(f"[LOAD] CSV 로드 완료: {os.path.basename(file_path)} ({len(records)}건)")
+                return records
+
+        except UnicodeDecodeError:
+            continue
+
+    print(f"[ERROR] CSV 인코딩을 확인해주세요: {file_path}")
+    return []
+
+
+def load_busan_youth_policies():
+    """부산광역시 청년지원정책 현황 CSV 로드"""
+    return load_csv_records(BUSAN_YOUTH_POLICY_FILE)
+
+
+def load_busan_job_services():
+    """부산광역시 청년일자리지원 서비스 CSV 로드"""
+    return load_csv_records(BUSAN_JOB_SERVICE_FILE)

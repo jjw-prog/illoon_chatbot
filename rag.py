@@ -7,7 +7,15 @@ import anthropic
 import requests
 from dotenv import load_dotenv
 import voyageai
-from loader import load_all_jobs, load_quick_replies, load_trend_summaries, load_intent_examples, get_category_stats
+from loader import (
+    load_all_jobs,
+    load_quick_replies,
+    load_trend_summaries,
+    load_intent_examples,
+    get_category_stats,
+    load_busan_youth_policies,
+    load_busan_job_services
+)
 
 # ============================
 # 초기 설정
@@ -64,6 +72,13 @@ quick_replies = load_quick_replies()
 
 # 카테고리별 통계 데이터 로드
 category_stats = get_category_stats()
+
+# 부산 공공데이터
+busan_youth_policies = load_busan_youth_policies()
+busan_job_services = load_busan_job_services()
+
+print(f"부산 청년정책 데이터: {len(busan_youth_policies)}건")
+print(f"부산 일자리지원서비스 데이터: {len(busan_job_services)}건")
 
 # ============================
 # 인덱스 구축 함수
@@ -507,10 +522,213 @@ def find_similar_quick_reply(query: str, threshold: float = 30.0):
 # 공공데이터 검색
 # ============================
 
+def contains_any(text: str, keywords: list) -> bool:
+    """텍스트에 키워드 중 하나라도 포함되는지 확인"""
+    if not text:
+        return False
+    return any(keyword for keyword in keywords if keyword and keyword in text)
+
+
+def search_busan_policies(query: str, entities: dict = {}, user_info: dict = None, top_k: int = 3):
+    """부산광역시 청년지원정책 CSV에서 관련 정책 검색"""
+    results = []
+
+    policy_type = entities.get("정책유형") or ""
+    detail_keyword = entities.get("세부키워드") or ""
+
+    keywords = []
+    if detail_keyword:
+        keywords.extend([k.strip() for k in detail_keyword.split(",") if k.strip()])
+
+    # 질문에서 자주 쓰는 키워드도 보조 검색어로 사용
+    common_keywords = ["취업", "창업", "일자리", "면접", "교육", "상담", "청년", "지원", "인턴", "자격증"]
+    keywords.extend([kw for kw in common_keywords if kw in query])
+
+    if policy_type:
+        keywords.append(policy_type)
+
+    for item in busan_youth_policies:
+        score = 0
+        reasons = []
+
+        name = item.get("세부사업명", "")
+        content = item.get("주요내용", "")
+        field = item.get("분야", "")
+        student = item.get("학생 여부", "")
+        income = item.get("소득 기준", "")
+        vulnerable = item.get("취약계층사업 여부", "")
+        vulnerable_type = item.get("취약계층 유형", "")
+        employment_status = item.get("취창업 여부", "")
+        age_target = item.get("연령 구분", "")
+        support_type = item.get("지원형태", "")
+        law = item.get("관련 법령", "")
+        budget = item.get("예산", "")
+
+        search_text = f"{name} {content} {field} {student} {income} {vulnerable} {vulnerable_type} {employment_status} {age_target} {support_type}"
+
+        # 부산 공공데이터 기본 가점
+        score += 2
+        reasons.append("부산광역시 청년지원정책 데이터 기반")
+
+        # 질문 키워드 매칭
+        for kw in keywords:
+            if kw and kw in search_text:
+                score += 3
+                reasons.append(f"'{kw}' 키워드와 관련")
+                break
+
+        # 정책유형 매칭
+        if policy_type and policy_type in employment_status:
+            score += 3
+            reasons.append(f"{policy_type} 관련 정책")
+
+        # 일자리/취업 질문이면 일자리 분야 우대
+        if any(word in query for word in ["취업", "일자리", "구직", "면접", "인턴"]):
+            if "일자리" in field or "취업" in search_text:
+                score += 3
+                reasons.append("일자리·취업 분야 정책")
+
+        # 창업 질문이면 창업 관련 우대
+        if "창업" in query:
+            if "창업" in search_text:
+                score += 3
+                reasons.append("창업 관련 정책")
+
+        # 사용자 정보가 있으면 보조 반영
+        if user_info:
+            education = user_info.get("education", "")
+            career_type = user_info.get("career_type", "")
+
+            if education and "학생" in student and ("대학" in education or "학생" in education):
+                score += 2
+                reasons.append("사용자 학력/학생 여부와 관련")
+
+            if career_type and career_type in employment_status:
+                score += 2
+                reasons.append("사용자 취업 상태와 관련")
+
+        if score > 2:
+            results.append({
+                "name": name,
+                "description": content,
+                "support": support_type,
+                "keyword": field,
+                "period": "",
+                "url": "",
+                "score": score,
+                "reasons": reasons,
+                "source": "부산광역시 청년지원정책 현황",
+                "extra": {
+                    "분야": field,
+                    "학생 여부": student,
+                    "소득 기준": income,
+                    "취창업 여부": employment_status,
+                    "연령 구분": age_target,
+                    "관련 법령": law,
+                    "예산": budget
+                }
+            })
+
+    results.sort(key=lambda x: x.get("score", 0), reverse=True)
+    return results[:top_k]
+
+
+def search_busan_services(query: str, entities: dict = {}, top_k: int = 3):
+    """부산광역시 청년일자리지원서비스 CSV에서 관련 지원기관/서비스 검색"""
+    results = []
+
+    service_intent_keywords = ["상담", "센터", "기관", "어디", "위치", "문의", "방문", "지원서비스", "일자리센터", "취업지원"]
+    detail_keyword = entities.get("세부키워드") or ""
+
+    keywords = []
+    if detail_keyword:
+        keywords.extend([k.strip() for k in detail_keyword.split(",") if k.strip()])
+
+    keywords.extend([kw for kw in service_intent_keywords if kw in query])
+    keywords.extend([kw for kw in ["취업", "일자리", "청년", "면접", "교육", "상담"] if kw in query])
+
+    for item in busan_job_services:
+        score = 0
+        reasons = []
+
+        service_name = item.get("서비스명", "")
+        organization = item.get("운영기관", "")
+        address = item.get("상세주소", "")
+        phone = item.get("문의처", "")
+        homepage = item.get("홈페이지", "")
+        x = item.get("X좌표", "")
+        y = item.get("Y좌표", "")
+
+        search_text = f"{service_name} {organization} {address} {phone} {homepage}"
+
+        # 기관/상담 관련 질문이면 기본 가점
+        if contains_any(query, service_intent_keywords):
+            score += 4
+            reasons.append("부산 청년일자리 지원기관 안내가 필요한 질문")
+
+        # 키워드 매칭
+        for kw in keywords:
+            if kw and kw in search_text:
+                score += 3
+                reasons.append(f"'{kw}' 키워드와 관련")
+                break
+
+        # 위치/연락처가 있으면 서비스 활용성 가점
+        if address:
+            score += 1
+        if phone:
+            score += 1
+        if homepage:
+            score += 1
+        if x and y:
+            score += 1
+
+        if score >= 3:
+            results.append({
+                "name": service_name,
+                "description": f"{organization}에서 운영하는 부산 청년일자리 지원서비스입니다.",
+                "support": f"주소: {address} / 문의처: {phone}",
+                "keyword": "부산 청년일자리지원서비스",
+                "period": "",
+                "url": homepage,
+                "score": score,
+                "reasons": reasons,
+                "source": "부산광역시 청년일자리지원서비스 현황",
+                "extra": {
+                    "운영기관": organization,
+                    "상세주소": address,
+                    "문의처": phone,
+                    "홈페이지": homepage,
+                    "X좌표": x,
+                    "Y좌표": y
+                }
+            })
+
+    results.sort(key=lambda x: x.get("score", 0), reverse=True)
+    return results[:top_k]
+
 def search_youth_policies(query: str, entities: dict = {}, user_info: dict = None):
     """온통청년 청년정책API에서 취업/창업 관련 정책 검색
     지역/키워드 기준 간단 랭킹 → 상위 5개 반환
     """
+
+        # 부산 공공데이터 CSV 검색
+    busan_policy_results = search_busan_policies(
+        query=query,
+        entities=entities,
+        user_info=user_info,
+        top_k=3
+    )
+
+    busan_service_results = search_busan_services(
+        query=query,
+        entities=entities,
+        top_k=2
+    )
+
+    print(f"[PUBLIC_DATA] 부산 정책 검색 결과: {len(busan_policy_results)}건")
+    print(f"[PUBLIC_DATA] 부산 지원서비스 검색 결과: {len(busan_service_results)}건")
+    
     url = "https://www.youthcenter.go.kr/go/ythip/getPlcy"
 
     # 엔터티에서 추출
@@ -581,7 +799,7 @@ def search_youth_policies(query: str, entities: dict = {}, user_info: dict = Non
             matched_policy["_score"] = 999
             matched_policy["_reasons"] = ["사용자가 특정 정책명을 질문한 것으로 판단됨"]
 
-            return [{
+            matched_result = [{
                 "name": matched_policy.get("plcyNm", ""),
                 "description": matched_policy.get("plcyExplnCn", ""),
                 "support": matched_policy.get("plcySprtCn", ""),
@@ -589,8 +807,11 @@ def search_youth_policies(query: str, entities: dict = {}, user_info: dict = Non
                 "period": matched_policy.get("aplyYmd", ""),
                 "url": matched_policy.get("aplyUrlAddr", ""),
                 "score": matched_policy.get("_score", 999),
-                "reasons": matched_policy.get("_reasons", [])
+                "reasons": matched_policy.get("_reasons", []),
+                "source": "온통청년 정책 API"
             }]
+
+            return matched_result + busan_service_results
         
         # 3단계: 간단 점수 계산
         def calc_score(item):
@@ -647,18 +868,27 @@ def search_youth_policies(query: str, entities: dict = {}, user_info: dict = Non
                 "name": item.get("plcyNm", ""),
                 "description": item.get("plcyExplnCn", ""),
                 "support": item.get("plcySprtCn", ""),
-                "keyword": item.get("plcyKywdNm", ""),
+               "keyword": item.get("plcyKywdNm", ""),
                 "period": item.get("aplyYmd", ""),
                 "url": item.get("aplyUrlAddr", ""),
                 "score": item.get("_score", 0),
-                "reasons": item.get("_reasons", [])
+                "reasons": item.get("_reasons", []),
+                "source": "온통청년 정책 API"
             })
 
-        return policies
+        # 부산 공공데이터 + 온통청년 API 결과 통합
+        combined = busan_policy_results + policies + busan_service_results
+
+        # 점수 기준 정렬 후 최대 7개 반환
+        combined.sort(key=lambda x: x.get("score", 0), reverse=True)
+
+        print(f"[PUBLIC_DATA] 통합 반환 결과: {len(combined[:7])}건")
+
+        return combined[:7]
 
     except Exception as e:
         print(f"온통청년 API 호출 실패: {e}")
-        return []
+        return busan_policy_results + busan_service_results
 
 
 # ============================
