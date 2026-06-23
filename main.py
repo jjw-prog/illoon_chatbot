@@ -2,7 +2,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
-from rag import search_jobs, search_trends, search_youth_policies, generate_answer, classify_intent, extract_entities, category_stats, normalize_job_type
+from rag import (
+    search_jobs,
+    search_trends,
+    search_youth_policies,
+    generate_answer,
+    classify_intent,
+    extract_entities,
+    category_stats,
+    normalize_job_type,
+    rewrite_query_with_history
+)
 from loader import get_user_info, load_quick_replies
 
 # ============================
@@ -83,6 +93,18 @@ def get_quick_replies():
 def chat(request: ChatRequest):
     query = request.message
 
+    # 이전 대화 맥락을 반영해 검색용 질문 재작성
+    search_query = rewrite_query_with_history(query, request.history)
+    
+    intent = classify_intent(search_query)
+    # COMPANY → GENERAL 보정
+    if intent == "COMPANY" and any(
+        word in search_query
+        for word in ["공고", "채용", "연봉", "지원서류", "채용절차", "마감일", "직무", "상세", "자세히"]
+    ):
+        intent = "GENERAL"
+    entities = extract_entities(search_query, intent)
+
     # 입력 필터링 - 너무 짧거나 의미없는 질문 차단
     if len(query.strip()) < 2:
         return {"answer": "질문을 좀 더 구체적으로 입력해주세요 😊"}
@@ -102,19 +124,19 @@ def chat(request: ChatRequest):
         print(f"퀵리플라이 처리: {query} (카테고리: {request.quick_replies_category})")
 
         # 퀵리플라이 개체명 추출
-        entities = extract_entities(query, "QUICK_REPLIES")
+        entities = extract_entities(search_query, "QUICK_REPLIES")
         print(f"추출된 개체명: {entities}")
 
         # 나의 검색 → 유저 정보 반영
         if request.quick_replies_category == "나의 검색":
-            related_jobs = search_jobs(query, user_info=user_info, entities=entities)
+            related_jobs = search_jobs(search_query, user_info=user_info, entities=entities)
             quick_replies_user_info = user_info
         # 공고/채용정보 → 유저 정보 없이
         else:
-            related_jobs = search_jobs(query, user_info=None, entities=entities)
+            related_jobs = search_jobs(search_query, user_info=None, entities=entities)
             quick_replies_user_info = None
 
-        related_trends = search_trends(query, entities=entities)
+        related_trends = search_trends(search_query, entities=entities)
         answer = generate_answer(
             query=query,
             related_jobs=related_jobs,
@@ -136,11 +158,10 @@ def chat(request: ChatRequest):
     # ============================
     # Intent 분류 후 처리
     # ============================
-    intent = classify_intent(query)
-    print(f"최종 Intent: {intent}")
 
-    # 개체명 추출 (인텐트에 맞게)
-    entities = extract_entities(query, intent)
+    if entities.get("직무"):
+        entities["직무"] = normalize_job_type(entities["직무"])
+
     print(f"추출된 개체명: {entities}")
 
     # INVALID → 취업 무관 질문 차단
@@ -161,7 +182,7 @@ def chat(request: ChatRequest):
 
     # PUBLIC_DATA → 온통청년 청년정책 데이터로 답변
     if intent == "PUBLIC_DATA":
-        policies = search_youth_policies(query, entities=entities, user_info=user_info)
+        policies = search_youth_policies(search_query, entities=entities, user_info=user_info)
         answer = generate_answer(
             query=query,
             related_jobs=[],
@@ -226,6 +247,9 @@ def chat(request: ChatRequest):
             entities["직무"] = entities.get("직무") or user_info.get("job_type")
             entities["지역"] = entities.get("지역") or user_info.get("region")
             entities["경력"] = entities.get("경력") or user_info.get("career_type")
+       
+        if entities.get("직무"):
+            entities["직무"] = normalize_job_type(entities["직무"])
        
         print(f"병합 후 entities: {entities}")  # 추가
         related_jobs = search_jobs(query, user_info=user_info, entities=entities)

@@ -59,9 +59,9 @@ def load_all_jobs():
         # 파일에서 카테고리 이름 가져오기 (예: AI/ML, 백엔드 등)
         category = data.get("category", "")
 
-        # 해당 파일의 공고들을 하나씩 꺼내서 전체 리스트에 추가
         for job in data.get("jobs", []):
-            job["category"] = category  # 각 공고에 카테고리 정보 추가
+            job_category_mid = job.get("position", {}).get("job_category", {}).get("mid", "")
+            job["category"] = category or job_category_mid
             all_jobs.append(job)
 
     return all_jobs  # 모든 공고 데이터 반환

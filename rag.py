@@ -159,7 +159,6 @@ def build_trend_index(trends: list):
     trend_texts = []
 
     for trend in trends:
-        # 트렌드 정보를 하나의 텍스트로 합치기 (검색 정확도 향상)
         text = f"{trend.get('category', '')} 트렌드 " + \
                f"인기 프레임워크: {' '.join(trend.get('hot_frameworks', []))} " + \
                f"인기 언어: {' '.join(trend.get('hot_languages', []))} " + \
@@ -168,10 +167,14 @@ def build_trend_index(trends: list):
                f"복지: {trend.get('welfare_trend', '')}"
         trend_texts.append(text)
 
-    # 텍스트를 벡터로 변환
+    # 트렌드 데이터가 없으면 빈 인덱스 생성
+    if not trend_texts:
+        dimension = 1024
+        index = faiss.IndexFlatL2(dimension)
+        return index
+
     embeddings = embed_documents(trend_texts)
 
-    # FAISS 인덱스 생성 및 벡터 추가
     dimension = embeddings.shape[1]
     index = faiss.IndexFlatL2(dimension)
     index.add(embeddings)
@@ -296,10 +299,10 @@ def normalize_job_type(job_type: str) -> str:
         "ML": "AI/ML",
         "머신러닝": "AI/ML",
         "딥러닝": "AI/ML",
-        "데이터": "데이터",
-        "DevOps": "인프라/DevOps",
-        "인프라": "인프라/DevOps",
-        "클라우드": "인프라/DevOps",
+        "데이터": "데이터 엔지니어링",
+        "DevOps": "DevOps/인프라",
+        "인프라": "DevOps/인프라",
+        "클라우드": "DevOps/인프라",
         "iOS": "모바일",
         "Android": "모바일",
         "모바일": "모바일",
@@ -312,9 +315,9 @@ def normalize_job_type(job_type: str) -> str:
         "보안": "보안",
         "QA": "QA/테스트",
         "테스트": "QA/테스트",
-        "PM": "기획/PM",
-        "기획": "기획/PM",
-        "프로덕트": "기획/PM",
+        "PM": "PM/기획",
+        "기획": "PM/기획",
+        "프로덕트": "PM/기획",
     }
 
     for keyword, category in 매핑.items():
@@ -331,7 +334,7 @@ def extract_entities(query: str, intent: str) -> dict:
 질문 유형: {intent}
 
 추출 규칙:
-- CUSTOM/GENERAL/QUICK_REPLIES: 직무, 지역, 경력, 기술스택, 고용형태(재택/정규직/계약직 등), 연봉조건(높은순/낮은순), 마감조건(임박) 추출
+CUSTOM/GENERAL/QUICK_REPLIES: 회사명, 공고명, 직무, 지역, 경력, 기술스택, 고용형태(재택/정규직/계약직 등), 연봉조건(높은순/낮은순), 마감조건(임박) 추출
 - TREND: 직무분야, 기술스택 추출
 - COMPANY: 회사명 추출
 - CAREER_TIP: 준비유형(자소서/면접/포트폴리오 등) 추출
@@ -339,30 +342,110 @@ def extract_entities(query: str, intent: str) -> dict:
 없으면 null로 표시. 반드시 JSON 형식으로만 답하세요.
 
 직무 추출 시 반드시 아래 표준 카테고리 중 하나로만 답하세요:
-백엔드/서버, 프론트엔드, AI/ML, 데이터, 인프라/DevOps, 모바일, 게임, 보안, QA/테스트, 기획/PM
+백엔드/서버, 프론트엔드, AI/ML, 데이터 엔지니어링, DevOps/인프라, 모바일 개발, 보안, QA/테스트, PM/기획
 (예: "iOS 개발" → "모바일", "머신러닝" → "AI/ML", "백엔드 개발" → "백엔드/서버")
 
 질문: {query}
 
 예시 출력:
-{{"직무": "백엔드/서버", "지역": null, "경력": "신입", "기술스택": "Python", "고용형태": "재택", "연봉조건": null, "마감조건": null}}"""
+{{"회사명": null, "공고명": null, "직무": "백엔드/서버", "지역": null, "경력": "신입", "기술스택": "Python", "고용형태": "재택", "연봉조건": null, "마감조건": null}}
 
+중요:
+- 반드시 JSON만 출력하세요.
+- JSON 앞뒤에 설명을 쓰지 마세요.
+- 문자열 값은 한 줄로만 작성하세요.
+- 줄바꿈(\\n)을 포함하지 마세요.
+- 회사명과 공고명은 짧게 추출하세요.
+- JSON 형식이 아니면 안 됩니다.
+"""
     response = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=100,
+        max_tokens=150,
         messages=[{"role": "user", "content": prompt}]
     )
-
+    print("=== 개체명 원본 응답 ===")
+    print(response.content[0].text) 
+    
     try:
         text = response.content[0].text.strip()
-        # ```json 백틱 제거
+
+        # 코드블록 제거
         text = text.replace("```json", "").replace("```", "").strip()
+
+        # 혹시 앞뒤에 설명이 섞여도 JSON 객체만 추출
+        json_match = re.search(r"\{[\s\S]*\}", text)
+        if json_match:
+            text = json_match.group(0)
+
         result = json.loads(text)
         return result
-    except:
-        print(f"개체명 추출 파싱 실패: {response.content[0].text.strip()}")
-        return {}
 
+    except Exception as e:
+        print(f"개체명 추출 파싱 실패: {response.content[0].text.strip()}")
+        print(f"파싱 에러: {e}")
+        return {}
+# ============================
+# History 기반 질문 재작성
+# ============================
+
+def rewrite_query_with_history(query: str, history: list) -> str:
+    """이전 대화 맥락을 반영해 현재 질문을 검색 가능한 독립 질문으로 재작성"""
+
+    if not history:
+        return query
+
+    recent_history = history[-6:]
+
+    history_text = ""
+    for msg in recent_history:
+        if isinstance(msg, dict):
+            role = msg.get("role", "")
+            content = msg.get("content", "")
+        else:
+            role = getattr(msg, "role", "")
+            content = getattr(msg, "content", "")
+
+        history_text += f"{role}: {content}\n"
+
+    prompt = f"""당신은 취업 플랫폼 챗봇의 검색 질의 재작성기입니다.
+
+사용자의 현재 질문이 이전 대화의 특정 공고, 회사, 순번, 정책, 조건을 가리키는 경우,
+검색에 사용할 수 있도록 독립적인 질문으로 바꾸세요.
+
+규칙:
+- 현재 질문만으로 의미가 충분하면 그대로 반환하세요.
+- "첫 번째/두 번째/세 번째/1번/2번/3번/그 회사/거기/해당 공고/지원서류/연봉/채용절차/마감일" 같은 표현은 이전 대화를 참고해 구체적인 회사명, 공고명, 직무명으로 바꾸세요.
+- 존재하지 않는 정보는 새로 만들지 마세요.
+- 반드시 재작성된 질문 한 문장만 출력하세요.
+- 설명, 따옴표, JSON, 마크다운은 출력하지 마세요.
+- 회사명이 포함되어 있어도 "공고", "채용", "연봉", "지원서류", "채용절차", "마감일", "직무", "상세"를 묻는 질문이면 기업 정보 질문이 아니라 채용공고 검색 질문으로 재작성하세요.
+
+이전 대화:
+{history_text}
+
+현재 질문:
+{query}
+
+재작성된 질문:"""
+
+    try:
+        response = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=100,
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+        rewritten = response.content[0].text.strip()
+
+        if rewritten:
+            print(f"[HISTORY REWRITE] {query} -> {rewritten}")
+            return rewritten
+
+        return query
+
+    except Exception as e:
+        print(f"[HISTORY REWRITE 실패] {e}")
+        return query
 
 # ============================
 # 검색 함수
@@ -382,6 +465,29 @@ def search_jobs(query: str, user_info: dict = None, top_k: int = 3, entities: di
     filtered_jobs = jobs  # 전체 공고에서 시작
 
     if entities:
+                # 회사명 / 공고명 필터
+        if entities.get("회사명") or entities.get("공고명"):
+            company_keyword = entities.get("회사명") or ""
+            title_keyword = entities.get("공고명") or ""
+
+            matched_jobs = [
+                j for j in filtered_jobs
+                if (
+                    company_keyword
+                    and company_keyword in j.get("company", {}).get("name", "")
+                ) or (
+                    title_keyword
+                    and title_keyword in j.get("position", {}).get("title", "")
+                )
+            ]
+
+            if matched_jobs:
+                print(f"회사명/공고명 필터 결과: {len(matched_jobs)}개")
+                return matched_jobs[:top_k]
+
+            print("회사명/공고명 필터 결과 없음 → 기존 필터 유지")
+
+
         # 직무 필터 (토큰 기반 부분 매칭으로 일반화)
         # LLM이 표준 카테고리로 뽑아주지만, user_info.job_type 같은 자유형식도 처리
         # 예: "백엔드 개발" → ["백엔드", "개발"] → "백엔드" in "백엔드/서버" → True
@@ -417,7 +523,10 @@ def search_jobs(query: str, user_info: dict = None, top_k: int = 3, entities: di
 
         # 마감 임박 정렬
         if entities.get("마감조건") == "임박":
-            filtered_jobs = sorted(filtered_jobs, key=lambda x: x.get("deadline", "9999-12-31"))
+            filtered_jobs = sorted(
+                filtered_jobs,
+                key=lambda x: x.get("dates", {}).get("deadline") or "9999-12-31"
+            )
 
     # 필터 결과가 있으면 top_k개 반환
     if filtered_jobs and entities and any([
@@ -911,11 +1020,22 @@ def generate_answer(query: str, related_jobs: list, user_info: dict = None, hist
         career_type = job.get("position", {}).get("career", {}).get("type", "")
         benefits = ", ".join(job.get("detail", {}).get("benefits", []))
         work_type = job.get("position", {}).get("work_type", "")
+        deadline = job.get("dates", {}).get("deadline", "")
+        documents = ", ".join(job.get("apply", {}).get("document", []))
+        preferred = ", ".join(job.get("detail", {}).get("preferred", []))
+        talent = ", ".join(job.get("detail", {}).get("talent", []))
+
+        steps = job.get("recruitment_process", {}).get("steps", [])
+        process = " → ".join([step.get("name", "") for step in steps if step.get("name")])
 
         jobs_text += f"{i}. [{category}] {company} - {title}\n"
         jobs_text += f"   위치: {location} | 연봉: {salary_text} | 경력: {career_type}\n"
-        jobs_text += f"   근무형태: {work_type}\n"
+        jobs_text += f"   근무형태: {work_type} | 마감일: {deadline}\n"
         jobs_text += f"   스킬: {skills}\n"
+        jobs_text += f"   지원서류: {documents}\n"
+        jobs_text += f"   채용절차: {process}\n"
+        jobs_text += f"   우대사항: {preferred}\n"
+        jobs_text += f"   인재상: {talent}\n"
         jobs_text += f"   복리후생: {benefits}\n\n"
 
     # 트렌드 데이터를 텍스트로 변환
